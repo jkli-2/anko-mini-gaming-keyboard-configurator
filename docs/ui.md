@@ -81,6 +81,19 @@ layer-switch action, distinct from the ordinary F1–F24 host keys.
 
 If the bundled KLE data is invalid or cannot be matched one-to-one with the physical
 keys, the client falls back to its built-in geometry rather than guessing device IDs.
+
+The assignment palette has a separate **Keyboard Controls** category for operations
+handled inside the keyboard rather than emitted to the host: LED on/off, brightness
+up/down, next effect, next colour, effect speed up/down, and keyboard lock. These use
+the canonical `firmware/0` through `firmware/7` actions. They are deliberately separate
+from **System**, which contains host power, sleep, and wake actions.
+
+The keyboard also has fixed Fn shortcuts that are not fully represented by its stored
+Fn keymap: Fn+W toggles WASD/arrow mode; Fn+Left Ctrl toggles the number row between
+F1–F12 and media actions; and the stock lighting/lock combinations invoke the same
+onboard controls listed above. The client can assign confirmed onboard-control records,
+but it cannot currently read or display the active WASD or F-key/media mode.
+
 Settings can import one custom KLE raw-JSON layout or return to the bundled default.
 Imports are validated for the FDA1's 63 physical keys and positive geometry, then stored
 at `glib::user_data_dir()/anko-keyboard/layouts/custom.json`. Layout changes apply on the

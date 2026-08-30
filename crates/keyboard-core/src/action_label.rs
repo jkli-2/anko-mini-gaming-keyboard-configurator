@@ -20,7 +20,11 @@ pub fn canonical_action_label(action: &str) -> String {
         ["mouse-button", buttons, wheel] => mouse_button_label(buttons, wheel),
         ["mouse-move", x, y, wheel] => format!("Mouse {x},{y} / {wheel}"),
         ["macro", id] => format!("Macro {id}"),
-        ["firmware", code] => format!("System {code}"),
+        ["firmware", code] => code
+            .parse::<u8>()
+            .ok()
+            .map(firmware_label)
+            .unwrap_or_else(|| action.to_string()),
         ["power", "1"] => "Power".to_string(),
         ["power", "2"] => "Sleep".to_string(),
         ["power", "4"] => "Wake".to_string(),
@@ -145,6 +149,20 @@ fn consumer_label(usage: u16) -> String {
     }
 }
 
+fn firmware_label(code: u8) -> String {
+    match code {
+        0 => "LED On / Off".to_string(),
+        1 => "LED Brightness +".to_string(),
+        2 => "LED Brightness −".to_string(),
+        3 => "Next LED Effect".to_string(),
+        4 => "Next LED Colour".to_string(),
+        5 => "LED Speed +".to_string(),
+        6 => "LED Speed −".to_string(),
+        7 => "Keyboard Lock".to_string(),
+        _ => format!("Keyboard Control {code}"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,6 +184,10 @@ mod tests {
             ("power/2", "Sleep"),
             ("function-layer", "Fn"),
             ("macro/4", "Macro 4"),
+            ("firmware/0", "LED On / Off"),
+            ("firmware/3", "Next LED Effect"),
+            ("firmware/7", "Keyboard Lock"),
+            ("firmware/99", "Keyboard Control 99"),
         ];
         for (canonical, expected) in cases {
             assert_eq!(canonical_action_label(canonical), expected);
@@ -176,6 +198,7 @@ mod tests {
     fn malformed_and_unknown_actions_remain_identifiable() {
         assert_eq!(canonical_action_label("keyboard/nope/0"), "keyboard/nope/0");
         assert_eq!(canonical_action_label("keyboard/255/0"), "Key 0xFF");
+        assert_eq!(canonical_action_label("firmware/nope"), "firmware/nope");
         assert_eq!(canonical_action_label("future/action"), "future/action");
     }
 }

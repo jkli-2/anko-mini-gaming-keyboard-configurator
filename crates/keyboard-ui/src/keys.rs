@@ -188,6 +188,17 @@ const SYSTEM_ACTIONS: &[PaletteAction] = &[
     ("Wake", "power/4"),
 ];
 
+const KEYBOARD_CONTROL_ACTIONS: &[PaletteAction] = &[
+    ("LED On / Off", "firmware/0"),
+    ("LED Brightness +", "firmware/1"),
+    ("LED Brightness −", "firmware/2"),
+    ("Next LED Effect", "firmware/3"),
+    ("Next LED Colour", "firmware/4"),
+    ("LED Speed +", "firmware/5"),
+    ("LED Speed −", "firmware/6"),
+    ("Keyboard Lock", "firmware/7"),
+];
+
 const MACRO_ACTIONS: &[PaletteAction] = &[
     ("M0", "macro/0"),
     ("M1", "macro/1"),
@@ -211,6 +222,14 @@ pub(crate) fn compact_keycap_label(label: &str) -> String {
     // Keep the physical KLE geometry stable even when an assignment has a long
     // human-readable name. This is display-only: the canonical action string
     // and full label remain unchanged in the summary, tooltip, and draft.
+    match label {
+        "LED Brightness +" => return "LED+".into(),
+        "LED Brightness −" => return "LED−".into(),
+        "LED Speed +" => return "Spd+".into(),
+        "LED Speed −" => return "Spd−".into(),
+        _ => {}
+    }
+
     let compact: String = label
         .chars()
         .filter(|c| c.is_ascii_alphanumeric())
@@ -239,6 +258,10 @@ pub(crate) fn compact_keycap_label(label: &str) -> String {
         "stop" | "mediastop" => "■".into(),
         "brightnessup" | "brightup" => "Brt+".into(),
         "brightnessdown" | "brightdown" => "Brt−".into(),
+        "ledonoff" => "LED".into(),
+        "nextledeffect" => "Fx+".into(),
+        "nextledcolour" | "nextledcolor" => "Col+".into(),
+        "keyboardlock" => "Lock".into(),
         "mouseleftclick" => "MLeft".into(),
         "mouserightclick" => "MRight".into(),
         "mousemiddleclick" => "MMid".into(),
@@ -741,6 +764,7 @@ pub(crate) fn keys_page() -> KeysPage {
         "F-keys",
         "Media",
         "Mouse",
+        "Keyboard Controls",
         "System",
         "Macros",
     ]);
@@ -854,6 +878,12 @@ pub(crate) fn keys_page() -> KeysPage {
         ("fkeys", "F-keys", FKEY_ACTIONS, 12),
         ("media", "Media", MEDIA_ACTIONS, 7),
         ("mouse", "Mouse", MOUSE_ACTIONS, 7),
+        (
+            "keyboard-controls",
+            "Keyboard Controls",
+            KEYBOARD_CONTROL_ACTIONS,
+            4,
+        ),
         ("system", "System", SYSTEM_ACTIONS, 3),
         ("macros", "Macros", MACRO_ACTIONS, 8),
     ] {
@@ -897,6 +927,7 @@ pub(crate) fn keys_page() -> KeysPage {
                 "fkeys",
                 "media",
                 "mouse",
+                "keyboard-controls",
                 "system",
                 "macros",
             ];
@@ -1034,6 +1065,16 @@ mod tests {
         assert!(MOUSE_ACTIONS.contains(&("Left Click", "mouse-button/1/0")));
         assert!(MOUSE_ACTIONS.contains(&("Wheel Down", "mouse-button/0/-1")));
         assert!(SYSTEM_ACTIONS.contains(&("Sleep", "power/2")));
+        for &(label, action) in KEYBOARD_CONTROL_ACTIONS {
+            let code = action
+                .strip_prefix("firmware/")
+                .unwrap_or_else(|| panic!("{label} has noncanonical action {action}"));
+            code.parse::<u8>()
+                .unwrap_or_else(|_| panic!("{label} has invalid firmware code in {action}"));
+        }
+        assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("LED On / Off", "firmware/0")));
+        assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("Next LED Effect", "firmware/3")));
+        assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("Keyboard Lock", "firmware/7")));
         for &(label, action) in MACRO_ACTIONS {
             let id = action
                 .strip_prefix("macro/")
@@ -1055,5 +1096,15 @@ mod tests {
         assert_eq!(parse_shortcut_action("macro/0"), None);
         assert_eq!(parse_shortcut_action("keyboard/6/0"), None);
         assert_eq!(parse_shortcut_action("keyboard/0/1"), None);
+    }
+
+    #[test]
+    fn keyboard_control_labels_stay_compact_and_directional() {
+        assert_eq!(compact_keycap_label("LED On / Off"), "LED");
+        assert_eq!(compact_keycap_label("LED Brightness +"), "LED+");
+        assert_eq!(compact_keycap_label("LED Brightness −"), "LED−");
+        assert_eq!(compact_keycap_label("LED Speed +"), "Spd+");
+        assert_eq!(compact_keycap_label("LED Speed −"), "Spd−");
+        assert_eq!(compact_keycap_label("Keyboard Lock"), "Lock");
     }
 }

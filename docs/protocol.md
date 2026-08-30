@@ -21,6 +21,34 @@ The leading `00` is report ID 0. Vendor payloads begin with family `06`.
 - Four-byte key-action records, with a raw fallback for unknown/non-canonical values.
 - The understood 4096-byte macro pointer table and four-byte event records.
 
+Firmware/device-control key actions use record type `0x1F` with the control code in
+the second byte. Confirmed official-client codes are `0` LED on/off, `1`/`2` LED
+brightness up/down, `3` next LED effect, `4` next LED colour, `5`/`6` LED effect speed
+up/down, and `7` keyboard lock. The daemon represents these as `firmware/<code>`.
+
+These assignable records should not be confused with every built-in Fn combination.
+Physical testing shows that Fn+W toggles WASD/arrow mode and Fn+Left Ctrl toggles the
+number row between F1–F12 and media actions, but neither operation appears in the
+official assignable-control table. A keymap read continues to return the stored Fn
+assignments and does not expose either mode's current runtime state.
+
+Observed stock onboard shortcuts are:
+
+| Chord | Firmware behaviour |
+| --- | --- |
+| Fn+W | Toggle the unmodified W/A/S/D keys between letters and arrow keys |
+| Fn+Backslash | Select the next LED effect |
+| Fn+Enter | Toggle the LEDs |
+| Fn+Up / Fn+Down | Increase / decrease LED brightness |
+| Fn+Left / Fn+Right | Decrease / increase LED effect speed |
+| Fn+Left Ctrl | Toggle the number row between F1–F12 and media mode |
+| Fn+Left Super | Toggle keyboard lock |
+
+In media mode the number row maps `1..=` to Media Player, Volume Down, Volume Up,
+Mute, Stop, Previous Track, Play/Pause, Next Track, Mail, Web Home, Computer, and
+Calculator respectively. The two mode toggles have no confirmed assignable `0x1F`
+record and therefore remain documented onboard behaviour rather than palette actions.
+
 ## Bank mapping
 
 The semantic API exposes only `Base` and `Fn`:
