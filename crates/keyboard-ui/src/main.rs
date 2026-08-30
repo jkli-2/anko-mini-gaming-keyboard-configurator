@@ -6,6 +6,7 @@ mod kle;
 mod lighting;
 mod macros;
 mod model;
+mod profile;
 mod settings;
 mod style;
 

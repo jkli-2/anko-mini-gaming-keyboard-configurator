@@ -159,10 +159,15 @@ writing zero for the currently reserved/index byte.
 - The header refresh button calls `Refresh` and reloads all displayed state.
 - Provides the single custom/default KLE control, import guidance, and links to KLE plus
   the reference keyboard layout. Changes apply after restart.
-- Exposes factory reset only behind an explicit destructive confirmation dialog.
-- Does not yet provide device-profile backup or restore. Factory reset returns the
-  keyboard to stock state and cannot recover the user's previous Base/Fn maps, lighting,
-  or macros; users must treat it as destructive rather than as a profile workflow.
+- Keeps one named local device profile and can import or export its versioned JSON file.
+  A backup captures both complete 75-record keymaps, exact lighting, all RGB storage,
+  raw macro storage, and local macro names/semantic steps. Import validates and stores a
+  profile but deliberately does not write it to the keyboard; Restore requires a second,
+  explicit confirmation and uses daemon-side verified rollback.
+- Records whether the default or custom KLE layout was active as metadata only. Profile
+  restore never replaces the user's selected layout or imported KLE file.
+- Exposes factory reset behind a dialog offering Back Up and Reset, Reset Without Backup,
+  or Cancel. The reset is not sent if creation of the pre-reset backup fails.
 
 ### Macros
 

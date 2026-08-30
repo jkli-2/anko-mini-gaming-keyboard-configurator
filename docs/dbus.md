@@ -168,6 +168,30 @@ Signature: `FactoryReset() -> ()`. This sends the identified destructive `06 0F 
 operation. The GTK client is the policy boundary and requires an explicit destructive
 confirmation dialog. Factory reset is never called by automated tests.
 
+### CaptureHardwareSnapshot / RestoreHardwareSnapshot
+
+Signatures:
+
+```text
+CaptureHardwareSnapshot() -> s snapshot_json
+RestoreHardwareSnapshot(s snapshot_json) -> ()
+```
+
+The versioned snapshot contains both complete 75-record keymaps, exact global lighting,
+all 75 RGB storage records, device/firmware/protocol identity, and the complete raw
+4096-byte macro region. Raw key records and unknown-but-structurally-valid macro events
+are preserved byte-for-byte rather than being translated through the semantic APIs.
+
+Restore parses and validates the complete snapshot before its first write. It rejects a
+different VID/PID or protocol version, malformed region sizes and pointers, and invalid
+lighting state. The daemon captures a fresh pre-restore snapshot, writes each region with
+exact readback verification, and attempts to restore the entire captured state if any
+section fails. A returned rollback error identifies both the original failure and the
+failed recovery; the caller must treat that as potentially mixed device state.
+
+These methods contain hardware state only. The GTK profile envelope adds client-local
+macro names, semantic steps, and non-applied layout metadata.
+
 ## Manual verification
 
 Start the daemon:

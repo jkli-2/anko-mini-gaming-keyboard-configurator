@@ -8,7 +8,10 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use hidapi::{DeviceInfo, HidApi, HidDevice, HidError};
-use keyboard_core::{KeyAction, KeyBank, KeyboardConfig, LightingState, Macro, Rgb};
+use keyboard_core::{
+    HARDWARE_SNAPSHOT_VERSION, HardwareSnapshot, KeyAction, KeyBank, KeyboardConfig, LightingState,
+    Macro, Rgb,
+};
 
 use crate::{
     BLOCK_DATA_SIZE, KEY_INDEX_COUNT, MACRO_STORAGE_SIZE, MacroCodecError, PacketError,
@@ -18,7 +21,7 @@ use crate::{
     encode_lighting_effect_request, encode_lighting_read_request, encode_lighting_write,
     encode_macro_read, encode_macro_storage, encode_macro_write, encode_rgb_bulk_block,
     encode_rgb_read, encode_rgb_values, parse_config_response, parse_lighting_config_response,
-    parse_lighting_response,
+    parse_lighting_response, validate_macro_storage_layout,
 };
 
 pub const VENDOR_ID: u16 = 0x36AE;
@@ -54,6 +57,7 @@ pub enum TransportError {
         expected: usize,
         actual: usize,
     },
+    InvalidSnapshot(String),
     VerificationFailed(&'static str),
     LightingVerificationFailed {
         expected: LightingState,
@@ -97,6 +101,7 @@ impl fmt::Display for TransportError {
                 f,
                 "color map has the wrong length: expected {expected} records, got {actual}"
             ),
+            Self::InvalidSnapshot(error) => write!(f, "invalid hardware snapshot: {error}"),
             Self::VerificationFailed(operation) => {
                 write!(f, "hardware readback did not match {operation}")
             }
@@ -206,14 +211,14 @@ impl KeyboardDevice {
 
     /// Read and decode all 16 macro slots without modifying device state.
     pub fn read_macros(&self) -> Result<Vec<Macro>, TransportError> {
-        decode_macro_storage(&self.read_macro_storage()?).map_err(Into::into)
+        decode_macro_storage(&self.read_macro_storage_raw()?).map_err(Into::into)
     }
 
     /// Replace the macro store, verify exact readback, and restore the original
     /// bytes if either the write or verification fails.
     pub fn write_macros(&self, macros: &[Macro]) -> Result<(), TransportError> {
         let expected = encode_macro_storage(macros)?;
-        let original = self.read_macro_storage()?;
+        let original = self.read_macro_storage_raw()?;
         if original == expected {
             return Ok(());
         }
@@ -243,7 +248,8 @@ impl KeyboardDevice {
         validate_write_reply(&response)
     }
 
-    fn read_macro_storage(&self) -> Result<Vec<u8>, TransportError> {
+    /// Read the complete macro region without semantic decoding.
+    pub fn read_macro_storage_raw(&self) -> Result<Vec<u8>, TransportError> {
         let mut storage = Vec::with_capacity(MACRO_STORAGE_SIZE);
         for offset in (0..MACRO_STORAGE_SIZE).step_by(BLOCK_DATA_SIZE) {
             let requested_len = BLOCK_DATA_SIZE.min(MACRO_STORAGE_SIZE - offset);
@@ -252,6 +258,96 @@ impl KeyboardDevice {
             storage.extend_from_slice(decode_block_response(&response, requested_len)?);
         }
         Ok(storage)
+    }
+
+    /// Capture all persistent regions needed for a lossless device backup.
+    pub fn capture_hardware_snapshot(&self) -> Result<HardwareSnapshot, TransportError> {
+        let config = self.read_config()?;
+        let base_keymap = self
+            .read_keymap(KeyBank::Base)?
+            .into_iter()
+            .map(encode_key_action)
+            .collect();
+        let fn_keymap = self
+            .read_keymap(KeyBank::Fn)?
+            .into_iter()
+            .map(encode_key_action)
+            .collect();
+        let lighting = self.read_lighting()?;
+        let key_rgb = self
+            .read_colors()?
+            .into_iter()
+            .map(|color| [color.r, color.g, color.b])
+            .collect();
+        let macro_storage = self.read_macro_storage_raw()?;
+
+        Ok(HardwareSnapshot {
+            version: HARDWARE_SNAPSHOT_VERSION,
+            vendor_id: VENDOR_ID,
+            product_id: config.product_id,
+            firmware_version: config.firmware_version,
+            protocol_version: config.protocol_version,
+            base_keymap,
+            fn_keymap,
+            lighting,
+            key_rgb,
+            macro_storage,
+        })
+    }
+
+    /// Restore a complete snapshot as one logical operation. If any section
+    /// fails, every already-written section is restored from a fresh baseline.
+    pub fn restore_hardware_snapshot(
+        &self,
+        target: &HardwareSnapshot,
+    ) -> Result<(), TransportError> {
+        let config = self.read_config()?;
+        validate_snapshot(target, &config)?;
+        let original = self.capture_hardware_snapshot()?;
+        if original == *target {
+            return Ok(());
+        }
+
+        if let Err(error) = self.apply_hardware_snapshot(target) {
+            return match self.apply_hardware_snapshot(&original) {
+                Ok(()) => Err(error),
+                Err(restore_error) => Err(TransportError::RestoreFailed {
+                    operation: error.to_string(),
+                    restore: restore_error.to_string(),
+                }),
+            };
+        }
+        Ok(())
+    }
+
+    fn apply_hardware_snapshot(&self, snapshot: &HardwareSnapshot) -> Result<(), TransportError> {
+        let base_keymap: Vec<_> = snapshot
+            .base_keymap
+            .iter()
+            .copied()
+            .map(decode_key_action)
+            .collect();
+        let fn_keymap: Vec<_> = snapshot
+            .fn_keymap
+            .iter()
+            .copied()
+            .map(decode_key_action)
+            .collect();
+        let colors: Vec<_> = snapshot
+            .key_rgb
+            .iter()
+            .map(|rgb| Rgb {
+                r: rgb[0],
+                g: rgb[1],
+                b: rgb[2],
+            })
+            .collect();
+
+        self.write_macro_storage_raw(&snapshot.macro_storage)?;
+        self.write_keymap(KeyBank::Base, &base_keymap)?;
+        self.write_keymap(KeyBank::Fn, &fn_keymap)?;
+        self.write_colors(&colors)?;
+        self.write_lighting(snapshot.lighting)
     }
 
     pub fn read_lighting(&self) -> Result<LightingState, TransportError> {
@@ -548,11 +644,41 @@ impl KeyboardDevice {
     }
 
     fn verify_macro_storage(&self, expected: &[u8]) -> Result<(), TransportError> {
-        if self.read_macro_storage()? == expected {
+        if self.read_macro_storage_raw()? == expected {
             Ok(())
         } else {
             Err(TransportError::VerificationFailed("macro storage write"))
         }
+    }
+
+    /// Replace the complete macro storage byte-for-byte with verified readback.
+    pub fn write_macro_storage_raw(&self, storage: &[u8]) -> Result<(), TransportError> {
+        if storage.len() != MACRO_STORAGE_SIZE {
+            return Err(TransportError::InvalidSnapshot(format!(
+                "macro storage has {} bytes; expected {MACRO_STORAGE_SIZE}",
+                storage.len()
+            )));
+        }
+        let original = self.read_macro_storage_raw()?;
+        if original == storage {
+            return Ok(());
+        }
+        let operation = self
+            .write_macro_storage_once(storage)
+            .and_then(|()| self.verify_macro_storage(storage));
+        if let Err(error) = operation {
+            let restore = self
+                .write_macro_storage_once(&original)
+                .and_then(|()| self.verify_macro_storage(&original));
+            return match restore {
+                Ok(()) => Err(error),
+                Err(restore_error) => Err(TransportError::RestoreFailed {
+                    operation: error.to_string(),
+                    restore: restore_error.to_string(),
+                }),
+            };
+        }
+        Ok(())
     }
 
     fn read_blocks(
@@ -614,6 +740,73 @@ impl KeyboardDevice {
         while device.read(&mut response)? != 0 {}
         Ok(())
     }
+}
+
+fn validate_snapshot(
+    snapshot: &HardwareSnapshot,
+    config: &KeyboardConfig,
+) -> Result<(), TransportError> {
+    let invalid = |message: String| TransportError::InvalidSnapshot(message);
+    if snapshot.version != HARDWARE_SNAPSHOT_VERSION {
+        return Err(invalid(format!(
+            "schema version {} is unsupported; expected {HARDWARE_SNAPSHOT_VERSION}",
+            snapshot.version
+        )));
+    }
+    if snapshot.vendor_id != VENDOR_ID || snapshot.product_id != PRODUCT_ID {
+        return Err(invalid(format!(
+            "profile targets {:04X}:{:04X}, expected {VENDOR_ID:04X}:{PRODUCT_ID:04X}",
+            snapshot.vendor_id, snapshot.product_id
+        )));
+    }
+    if config.product_id != snapshot.product_id {
+        return Err(invalid(format!(
+            "connected product {:04X} does not match profile product {:04X}",
+            config.product_id, snapshot.product_id
+        )));
+    }
+    if config.protocol_version != snapshot.protocol_version {
+        return Err(invalid(format!(
+            "connected protocol {} does not match profile protocol {}",
+            config.protocol_version, snapshot.protocol_version
+        )));
+    }
+    for (name, records) in [
+        ("Base keymap", &snapshot.base_keymap),
+        ("Fn keymap", &snapshot.fn_keymap),
+    ] {
+        if records.len() != KEY_INDEX_COUNT {
+            return Err(invalid(format!(
+                "{name} has {} records; expected {KEY_INDEX_COUNT}",
+                records.len()
+            )));
+        }
+    }
+    if snapshot.key_rgb.len() != KEY_INDEX_COUNT {
+        return Err(invalid(format!(
+            "RGB map has {} records; expected {KEY_INDEX_COUNT}",
+            snapshot.key_rgb.len()
+        )));
+    }
+    if snapshot.macro_storage.len() != MACRO_STORAGE_SIZE {
+        return Err(invalid(format!(
+            "macro storage has {} bytes; expected {MACRO_STORAGE_SIZE}",
+            snapshot.macro_storage.len()
+        )));
+    }
+    validate_macro_storage_layout(&snapshot.macro_storage)?;
+    let lighting = snapshot.lighting;
+    if lighting.kind != 1 || lighting.effect > 19 {
+        return Err(invalid(
+            "lighting kind/effect is outside the verified FDA1 range".to_string(),
+        ));
+    }
+    if lighting.effect == 0 && lighting.color_enabled {
+        return Err(invalid(
+            "lighting color mode must be disabled when effect is Off".to_string(),
+        ));
+    }
+    Ok(())
 }
 
 fn open_path(api: &HidApi, path: &CStr) -> Result<HidDevice, HidError> {
@@ -702,6 +895,50 @@ fn lighting_readback_matches(expected: LightingState, actual: LightingState) -> 
 mod tests {
     use super::*;
 
+    fn snapshot_fixture() -> (HardwareSnapshot, KeyboardConfig) {
+        let mut macro_storage = vec![0; MACRO_STORAGE_SIZE];
+        macro_storage[..64].fill(0xff);
+        let config = KeyboardConfig {
+            protocol_version: 1,
+            product_id: PRODUCT_ID,
+            firmware_version: 3,
+            work_mode: 1,
+            link_status: 1,
+            battery: 50,
+            charge: 1,
+            profile_count: 0,
+            profile: 0,
+            layer_count: 2,
+            layer: 0,
+            auto_sleep_seconds: None,
+            serial_number: None,
+        };
+        let snapshot = HardwareSnapshot {
+            version: HARDWARE_SNAPSHOT_VERSION,
+            vendor_id: VENDOR_ID,
+            product_id: PRODUCT_ID,
+            firmware_version: 3,
+            protocol_version: 1,
+            base_keymap: vec![[0x20, 0, 0x29, 0]; KEY_INDEX_COUNT],
+            fn_keymap: vec![[0x20, 0, 0xff, 0]; KEY_INDEX_COUNT],
+            lighting: lighting(
+                1,
+                4,
+                0,
+                1,
+                true,
+                keyboard_core::Hsv {
+                    hue: 1,
+                    saturation: 2,
+                    value: 3,
+                },
+            ),
+            key_rgb: vec![[0, 0, 0]; KEY_INDEX_COUNT],
+            macro_storage,
+        };
+        (snapshot, config)
+    }
+
     #[test]
     fn timeout_conversion_is_bounded() {
         assert_eq!(duration_millis_i32(Duration::from_millis(200)), 200);
@@ -716,6 +953,26 @@ mod tests {
             Err(TransportError::Protocol(
                 ProtocolError::UnexpectedReplyPrefix(0x06)
             ))
+        ));
+    }
+
+    #[test]
+    fn hardware_snapshot_validation_is_strict_before_writes() {
+        let (snapshot, config) = snapshot_fixture();
+        assert!(validate_snapshot(&snapshot, &config).is_ok());
+
+        let mut wrong_length = snapshot.clone();
+        wrong_length.fn_keymap.pop();
+        assert!(matches!(
+            validate_snapshot(&wrong_length, &config),
+            Err(TransportError::InvalidSnapshot(_))
+        ));
+
+        let mut wrong_protocol = snapshot;
+        wrong_protocol.protocol_version = 2;
+        assert!(matches!(
+            validate_snapshot(&wrong_protocol, &config),
+            Err(TransportError::InvalidSnapshot(_))
         ));
     }
 

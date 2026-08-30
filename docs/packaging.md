@@ -232,6 +232,11 @@ packaging acceptance check is one reversible write which restores the captured s
 The application ID follows the project's GitHub namespace. GitHub account hyphens are
 represented as underscores because dashes are not valid in that reverse-DNS component.
 
+The client stores its active profile through GLib's per-user data directory under
+`anko-keyboard/profiles/active.json`. In the Flatpak this resolves inside the app's
+private data area. Import and export use the desktop file chooser, so users can move a
+portable profile JSON across the sandbox boundary without granting broad home access.
+
 ## Future standalone Flatpak
 
 An all-in-one Flatpak is deferred. Its preferred device boundary is the

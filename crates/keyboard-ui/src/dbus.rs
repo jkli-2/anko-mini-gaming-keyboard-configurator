@@ -25,6 +25,8 @@ pub enum Command {
     GetMacros,
     SetMacro { id: u8, events: Vec<MacroEvent> },
     DeleteMacro(u8),
+    CaptureHardwareSnapshot,
+    RestoreHardwareSnapshot(String),
     FactoryReset,
 }
 
@@ -38,6 +40,8 @@ pub enum Event {
     LightingApplied,
     Macros(Macros),
     MacroApplied,
+    HardwareSnapshot(String),
+    HardwareSnapshotRestored,
     FactoryResetApplied,
     Error(String),
 }
@@ -111,6 +115,14 @@ fn execute(command: Command) -> Result<Event, String> {
             .call::<_, _, ()>("DeleteMacro", &(id,))
             .map(|()| Event::MacroApplied)
             .map_err(|error| format!("DeleteMacro: {error}")),
+        Command::CaptureHardwareSnapshot => proxy
+            .call("CaptureHardwareSnapshot", &())
+            .map(Event::HardwareSnapshot)
+            .map_err(|error| format!("CaptureHardwareSnapshot: {error}")),
+        Command::RestoreHardwareSnapshot(snapshot) => proxy
+            .call::<_, _, ()>("RestoreHardwareSnapshot", &(snapshot.as_str(),))
+            .map(|()| Event::HardwareSnapshotRestored)
+            .map_err(|error| format!("RestoreHardwareSnapshot: {error}")),
         Command::FactoryReset => proxy
             .call::<_, _, ()>("FactoryReset", &())
             .map(|()| Event::FactoryResetApplied)

@@ -3,6 +3,7 @@
 A native Linux configurator for the [Anko Mini Gaming Keyboard 43721375](https://www.kmart.com.au/product/mini-gaming-keyboard-43721375/)
 (`36ae:fda1`). It provides key remapping for the Base and Fn layers, global lighting
 controls, and a semantic editor for the keyboard's 16 macro slots.
+It can also keep and export one named, lossless device profile for backup and restore.
 
 The project has two runtime components:
 
@@ -36,6 +37,7 @@ Flatpak/native installation, including the Arch Linux/AUR packages.
 ## Documentation
 
 - [GTK client](docs/ui.md)
+- [Device profiles](docs/profiles.md)
 - [D-Bus API](docs/dbus.md)
 - [Protocol notes](docs/protocol.md)
 - [Testing and hardware-write safety](docs/testing.md)

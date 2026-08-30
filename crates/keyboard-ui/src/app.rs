@@ -6,14 +6,15 @@ use std::time::Duration;
 
 use adw::prelude::*;
 use gtk::glib;
-use keyboard_core::{PHYSICAL_KEYS, canonical_action_label};
+use keyboard_core::{HardwareSnapshot, PHYSICAL_KEYS, canonical_action_label};
 
 use crate::dbus::{Client, Command, Event, Lighting};
 use crate::keys::{ShortcutControl, compact_keycap_label, keys_page};
 use crate::lighting::{ColorModeControl, DirectionControl, effect_capabilities, lighting_page};
 use crate::macros::{MacroPage, macros_page};
 use crate::model::KeymapDraft;
-use crate::settings::settings_page;
+use crate::profile::{DeviceProfile, load_active_profile, save_active_profile};
+use crate::settings::{SettingsPage, settings_page};
 use crate::style::install_css;
 
 struct State {
@@ -21,6 +22,12 @@ struct State {
     drafts: RefCell<HashMap<String, KeymapDraft>>,
     selected_key: RefCell<Option<String>>,
     updating: Cell<bool>,
+    profile_action: RefCell<Option<ProfileAction>>,
+}
+
+enum ProfileAction {
+    Backup { name: String, reset_after: bool },
+    Restore(Box<DeviceProfile>),
 }
 
 #[derive(Clone)]
@@ -49,6 +56,7 @@ struct Widgets {
     lighting_saturation: gtk::SpinButton,
     lighting_value: gtk::SpinButton,
     macros: MacroPage,
+    settings: SettingsPage,
 }
 
 pub(crate) fn build_ui(application: &adw::Application) {
@@ -59,6 +67,7 @@ pub(crate) fn build_ui(application: &adw::Application) {
         drafts: RefCell::new(HashMap::new()),
         selected_key: RefCell::new(None),
         updating: Cell::new(false),
+        profile_action: RefCell::new(None),
     });
     let window = adw::ApplicationWindow::builder()
         .application(application)
@@ -144,8 +153,8 @@ pub(crate) fn build_ui(application: &adw::Application) {
     stack.add_titled(&lighting_page, Some("lighting"), "Lighting");
     let macros_page = macros_page();
     stack.add_titled(&macros_page.root, Some("macros"), "Macros");
-    let (settings_page, info, error, factory_reset) = settings_page();
-    stack.add_titled(&settings_page, Some("settings"), "Settings");
+    let settings_page = settings_page();
+    stack.add_titled(&settings_page.root, Some("settings"), "Settings");
 
     {
         let stack = stack.clone();
@@ -187,8 +196,8 @@ pub(crate) fn build_ui(application: &adw::Application) {
     let widgets = Rc::new(Widgets {
         status,
         status_dot,
-        error,
-        info,
+        error: settings_page.error.clone(),
+        info: settings_page.info.clone(),
         bank,
         keys: key_buttons,
         key_assignments,
@@ -209,6 +218,7 @@ pub(crate) fn build_ui(application: &adw::Application) {
         lighting_saturation,
         lighting_value,
         macros: macros_page,
+        settings: settings_page.clone(),
     });
     connect_key_controls(&state, &widgets);
     connect_lighting_controls(&state, &widgets, &apply_lighting);
@@ -223,25 +233,134 @@ pub(crate) fn build_ui(application: &adw::Application) {
         });
     }
     {
+        let state = Rc::clone(&state);
+        let widgets = Rc::clone(&widgets);
+        let backup_profile = widgets.settings.backup_profile.clone();
+        backup_profile.connect_clicked(move |_| {
+            if state.profile_action.borrow().is_some() {
+                widgets
+                    .settings
+                    .set_profile_error("A profile operation is already in progress");
+                return;
+            }
+            widgets
+                .settings
+                .set_profile_message("Capturing complete device state…");
+            state.profile_action.replace(Some(ProfileAction::Backup {
+                name: widgets.settings.profile_name(),
+                reset_after: false,
+            }));
+            state.client.send(Command::CaptureHardwareSnapshot);
+        });
+    }
+    {
+        let state = Rc::clone(&state);
+        let widgets = Rc::clone(&widgets);
         let window = window.clone();
-        let client = state.client.clone();
+        let restore_profile = widgets.settings.restore_profile.clone();
+        restore_profile.connect_clicked(move |_| {
+            if state.profile_action.borrow().is_some() {
+                widgets
+                    .settings
+                    .set_profile_error("A profile operation is already in progress");
+                return;
+            }
+            let profile = match load_active_profile() {
+                Ok(Some(profile)) => profile,
+                Ok(None) => {
+                    widgets.settings.set_profile_error("There is no local profile to restore");
+                    return;
+                }
+                Err(error) => {
+                    widgets.settings.set_profile_error(&error);
+                    return;
+                }
+            };
+            let dialog = adw::MessageDialog::new(
+                Some(&window),
+                Some("Restore this profile?"),
+                Some(&format!(
+                    "This will replace the keyboard's keymaps, macros, lighting, and stored RGB data with ‘{}’ (firmware {}, protocol {}).",
+                    profile.name, profile.hardware.firmware_version, profile.hardware.protocol_version
+                )),
+            );
+            dialog.add_response("cancel", "Cancel");
+            dialog.add_response("restore", "Restore Profile");
+            dialog.set_close_response("cancel");
+            dialog.set_default_response(Some("cancel"));
+            dialog.set_response_appearance("restore", adw::ResponseAppearance::Destructive);
+            let state = Rc::clone(&state);
+            let widgets = Rc::clone(&widgets);
+            dialog.connect_response(None, move |dialog, response| {
+                if response == "restore" {
+                    if state.profile_action.borrow().is_some() {
+                        widgets
+                            .settings
+                            .set_profile_error("A profile operation is already in progress");
+                        dialog.close();
+                        return;
+                    }
+                    match serde_json::to_string(&profile.hardware) {
+                        Ok(snapshot) => {
+                            widgets.settings.set_profile_message("Restoring and verifying profile…");
+                            state
+                                .profile_action
+                                .replace(Some(ProfileAction::Restore(Box::new(profile.clone()))));
+                            state
+                                .client
+                                .send(Command::RestoreHardwareSnapshot(snapshot));
+                        }
+                        Err(error) => widgets.settings.set_profile_error(&error.to_string()),
+                    }
+                }
+                dialog.close();
+            });
+            dialog.present();
+        });
+    }
+    {
+        let window = window.clone();
+        let state = Rc::clone(&state);
+        let widgets = Rc::clone(&widgets);
+        let factory_reset = widgets.settings.factory_reset.clone();
         factory_reset.connect_clicked(move |_| {
             let dialog = adw::MessageDialog::new(
                 Some(&window),
                 Some("Restore factory values?"),
                 Some(
-                    "This permanently removes custom key mappings, macros, and lighting settings from the keyboard.",
+                    "Back up the current configuration first, or explicitly continue without a recoverable profile.",
                 ),
             );
             dialog.add_response("cancel", "Cancel");
-            dialog.add_response("reset", "Reset Keyboard");
+            dialog.add_response("reset", "Reset Without Backup");
+            dialog.add_response("backup-reset", "Back Up and Reset");
             dialog.set_close_response("cancel");
-            dialog.set_default_response(Some("cancel"));
+            dialog.set_default_response(Some("backup-reset"));
             dialog.set_response_appearance("reset", adw::ResponseAppearance::Destructive);
-            let client = client.clone();
+            dialog.set_response_appearance("backup-reset", adw::ResponseAppearance::Suggested);
+            let state = Rc::clone(&state);
+            let widgets = Rc::clone(&widgets);
             dialog.connect_response(None, move |dialog, response| {
-                if response == "reset" {
-                    client.send(Command::FactoryReset);
+                if response != "cancel" && state.profile_action.borrow().is_some() {
+                    widgets
+                        .settings
+                        .set_profile_error("A profile operation is already in progress");
+                    dialog.close();
+                    return;
+                }
+                match response {
+                    "backup-reset" => {
+                        widgets
+                            .settings
+                            .set_profile_message("Creating pre-reset backup…");
+                        state.profile_action.replace(Some(ProfileAction::Backup {
+                            name: "Pre-reset Backup".to_string(),
+                            reset_after: true,
+                        }));
+                        state.client.send(Command::CaptureHardwareSnapshot);
+                    }
+                    "reset" => state.client.send(Command::FactoryReset),
+                    _ => {}
                 }
                 dialog.close();
             });
@@ -489,6 +608,54 @@ fn handle_event(state: &Rc<State>, widgets: &Rc<Widgets>, event: Event) {
             widgets.status.set_text("Macro saved");
             state.client.send(Command::GetMacros);
         }
+        Event::HardwareSnapshot(snapshot_json) => {
+            let action = state.profile_action.borrow_mut().take();
+            let Some(ProfileAction::Backup { name, reset_after }) = action else {
+                widgets
+                    .settings
+                    .set_profile_error("Received an unexpected hardware snapshot");
+                return;
+            };
+            let result = serde_json::from_str::<HardwareSnapshot>(&snapshot_json)
+                .map_err(|error| error.to_string())
+                .and_then(|hardware| {
+                    DeviceProfile::new(name, hardware, widgets.macros.profile_metadata())
+                })
+                .and_then(|profile| save_active_profile(&profile));
+            match result {
+                Ok(()) => {
+                    widgets.settings.refresh_profile();
+                    widgets.settings.set_profile_message(if reset_after {
+                        "Pre-reset backup saved; resetting keyboard…"
+                    } else {
+                        "Profile backup saved"
+                    });
+                    if reset_after {
+                        state.client.send(Command::FactoryReset);
+                    }
+                }
+                Err(error) => widgets.settings.set_profile_error(&error),
+            }
+        }
+        Event::HardwareSnapshotRestored => {
+            let action = state.profile_action.borrow_mut().take();
+            let Some(ProfileAction::Restore(profile)) = action else {
+                widgets
+                    .settings
+                    .set_profile_error("Received an unexpected profile restore result");
+                return;
+            };
+            if let Err(error) = widgets.macros.restore_profile_metadata(&profile.client) {
+                widgets.settings.set_profile_error(&format!(
+                    "Hardware restored, but local macro metadata could not be saved: {error}"
+                ));
+            } else {
+                widgets
+                    .settings
+                    .set_profile_message("Profile restored and verified");
+            }
+            request_all(&state.client);
+        }
         Event::FactoryResetApplied => {
             set_status(
                 widgets,
@@ -501,6 +668,9 @@ fn handle_event(state: &Rc<State>, widgets: &Rc<Widgets>, event: Event) {
             });
         }
         Event::Error(error) => {
+            if state.profile_action.borrow_mut().take().is_some() {
+                widgets.settings.set_profile_error(&error);
+            }
             set_status(widgets, "Error", "error");
             widgets.error.set_text(&error);
         }

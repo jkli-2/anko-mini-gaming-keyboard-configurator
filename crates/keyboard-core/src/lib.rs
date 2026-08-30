@@ -4,9 +4,13 @@
 
 mod action_label;
 mod layout;
+mod profile;
 
 pub use action_label::canonical_action_label;
 pub use layout::{PHYSICAL_KEYS, PhysicalKey, physical_key_by_id};
+pub use profile::{HARDWARE_SNAPSHOT_VERSION, HardwareSnapshot};
+
+use serde::{Deserialize, Serialize};
 
 /// Configuration information reported by the keyboard.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -47,7 +51,7 @@ pub enum KeyAction {
     Raw { kind: u8, codes: [u8; 3] },
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Rgb {
     pub r: u8,
     pub g: u8,
@@ -55,14 +59,14 @@ pub struct Rgb {
 }
 
 /// Device-normalized HSV components. Each component occupies the full 0..=255 range.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Hsv {
     pub hue: u8,
     pub saturation: u8,
     pub value: u8,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct LightingState {
     pub kind: u8,
     pub effect: u8,

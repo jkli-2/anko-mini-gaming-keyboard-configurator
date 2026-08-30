@@ -41,7 +41,7 @@ use crate::dbus::{MacroEvent as DeviceMacroEvent, Macros};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
-enum MacroStep {
+pub(crate) enum MacroStep {
     Chord {
         modifiers: u8,
         key: u8,
@@ -845,6 +845,51 @@ pub(crate) struct MacroPage {
 }
 
 impl MacroPage {
+    pub(crate) fn profile_metadata(&self) -> crate::profile::ClientProfileMetadata {
+        crate::profile::ClientProfileMetadata {
+            macro_names: self
+                .names
+                .borrow()
+                .iter()
+                .map(|(&id, name)| (id, name.clone()))
+                .collect(),
+            macro_steps: self
+                .saved_steps
+                .borrow()
+                .iter()
+                .map(|(&id, steps)| (id, steps.clone()))
+                .collect(),
+            layout: if crate::kle::custom_kle_path().exists() {
+                "custom".to_string()
+            } else {
+                "default".to_string()
+            },
+        }
+    }
+
+    pub(crate) fn restore_profile_metadata(
+        &self,
+        metadata: &crate::profile::ClientProfileMetadata,
+    ) -> Result<(), String> {
+        let names: HashMap<_, _> = metadata
+            .macro_names
+            .iter()
+            .map(|(&id, name)| (id, name.clone()))
+            .collect();
+        let steps: HashMap<_, _> = metadata
+            .macro_steps
+            .iter()
+            .map(|(&id, steps)| (id, steps.clone()))
+            .collect();
+        save_macro_names(&names)?;
+        save_steps(&steps)?;
+        *self.names.borrow_mut() = names;
+        *self.saved_steps.borrow_mut() = steps;
+        self.refresh_names();
+        self.render_selected();
+        Ok(())
+    }
+
     pub fn set_macros(&self, macros: Macros) {
         let pending = self.pending_save.borrow_mut().take();
         let mut saved = self.saved_steps.borrow().clone();

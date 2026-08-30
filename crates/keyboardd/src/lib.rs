@@ -6,8 +6,8 @@ use std::time::Duration;
 
 use hidapi::HidApi;
 use keyboard_core::{
-    Hsv, KeyAction, KeyBank, KeyboardConfig, LightingState, Macro, MacroEvent, MacroEventAction,
-    MacroEventKind, Rgb,
+    HardwareSnapshot, Hsv, KeyAction, KeyBank, KeyboardConfig, LightingState, Macro, MacroEvent,
+    MacroEventAction, MacroEventKind, Rgb,
 };
 use keyboard_protocol::{KEY_INDEX_COUNT, KeyboardDevice, PHYSICAL_KEYS, physical_key_by_id};
 use zbus::interface;
@@ -17,6 +17,7 @@ pub const OBJECT_PATH: &str = "/io/github/jkli_2/anko_keyboard_configurator/Daem
 pub const INTERFACE_NAME: &str = "io.github.jkli_2.anko_keyboard_configurator.Daemon";
 
 const WORKER_RESPONSE_TIMEOUT: Duration = Duration::from_secs(15);
+const PROFILE_RESPONSE_TIMEOUT: Duration = Duration::from_secs(60);
 
 type LightingTuple = (u8, u8, u8, u8, u8, bool, u8, u8, u8, u8);
 type ColorAssignment = (String, u8, u8, u8);
@@ -239,6 +240,26 @@ impl WorkerHandle {
             .recv_timeout(WORKER_RESPONSE_TIMEOUT)
             .map_err(|_| "timed out waiting for HID worker factory reset".to_string())?
     }
+
+    pub fn capture_hardware_snapshot(&self) -> Result<HardwareSnapshot, String> {
+        let (reply, response) = mpsc::channel();
+        self.commands
+            .send(Command::CaptureHardwareSnapshot(reply))
+            .map_err(|_| "HID worker has stopped".to_string())?;
+        response
+            .recv_timeout(PROFILE_RESPONSE_TIMEOUT)
+            .map_err(|_| "timed out waiting for hardware snapshot".to_string())?
+    }
+
+    pub fn restore_hardware_snapshot(&self, snapshot: HardwareSnapshot) -> Result<(), String> {
+        let (reply, response) = mpsc::channel();
+        self.commands
+            .send(Command::RestoreHardwareSnapshot { snapshot, reply })
+            .map_err(|_| "HID worker has stopped".to_string())?;
+        response
+            .recv_timeout(PROFILE_RESPONSE_TIMEOUT)
+            .map_err(|_| "timed out waiting for hardware snapshot restore".to_string())?
+    }
 }
 
 enum Command {
@@ -280,6 +301,11 @@ enum Command {
     },
     DeleteMacro {
         id: u8,
+        reply: Sender<Result<(), String>>,
+    },
+    CaptureHardwareSnapshot(Sender<Result<HardwareSnapshot, String>>),
+    RestoreHardwareSnapshot {
+        snapshot: HardwareSnapshot,
         reply: Sender<Result<(), String>>,
     },
     FactoryReset(Sender<Result<(), String>>),
@@ -529,6 +555,30 @@ impl Worker {
         result
     }
 
+    fn capture_hardware_snapshot(&mut self) -> Result<HardwareSnapshot, String> {
+        eprintln!("keyboardd: capturing complete hardware snapshot");
+        let result = self
+            .device
+            .as_ref()
+            .ok_or_else(|| "keyboard is not connected; call Refresh".to_string())?
+            .capture_hardware_snapshot()
+            .map_err(|error| error.to_string());
+        self.record_device_error("hardware snapshot", &result);
+        result
+    }
+
+    fn restore_hardware_snapshot(&mut self, snapshot: &HardwareSnapshot) -> Result<(), String> {
+        eprintln!("keyboardd: restoring complete hardware snapshot");
+        let result = self
+            .device
+            .as_ref()
+            .ok_or_else(|| "keyboard is not connected; call Refresh".to_string())?
+            .restore_hardware_snapshot(snapshot)
+            .map_err(|error| error.to_string());
+        self.record_device_error("hardware snapshot restore", &result);
+        result
+    }
+
     fn record_device_error<T>(&mut self, operation: &str, result: &Result<T, String>) {
         if let Err(error) = result {
             eprintln!("keyboardd: {operation} failed: {error}");
@@ -605,6 +655,12 @@ fn worker_loop(receiver: Receiver<Command>, snapshot: Arc<Mutex<WorkerSnapshot>>
             }
             Command::DeleteMacro { id, reply } => {
                 let _ = reply.send(worker.delete_macro(id));
+            }
+            Command::CaptureHardwareSnapshot(reply) => {
+                let _ = reply.send(worker.capture_hardware_snapshot());
+            }
+            Command::RestoreHardwareSnapshot { snapshot, reply } => {
+                let _ = reply.send(worker.restore_hardware_snapshot(&snapshot));
             }
             Command::FactoryReset(reply) => {
                 let _ = reply.send(worker.factory_reset());
@@ -799,6 +855,25 @@ impl KeyboardService {
         validate_macro_id(id).map_err(zbus::fdo::Error::InvalidArgs)?;
         self.worker
             .delete_macro(id)
+            .map_err(zbus::fdo::Error::Failed)
+    }
+
+    /// Returns a versioned JSON snapshot containing every persistent hardware region.
+    fn capture_hardware_snapshot(&self) -> zbus::fdo::Result<String> {
+        let snapshot = self
+            .worker
+            .capture_hardware_snapshot()
+            .map_err(zbus::fdo::Error::Failed)?;
+        serde_json::to_string(&snapshot)
+            .map_err(|error| zbus::fdo::Error::Failed(error.to_string()))
+    }
+
+    /// Atomically restores a complete JSON hardware snapshot with verified rollback.
+    fn restore_hardware_snapshot(&self, snapshot_json: &str) -> zbus::fdo::Result<()> {
+        let snapshot: HardwareSnapshot = serde_json::from_str(snapshot_json)
+            .map_err(|error| zbus::fdo::Error::InvalidArgs(error.to_string()))?;
+        self.worker
+            .restore_hardware_snapshot(snapshot)
             .map_err(zbus::fdo::Error::Failed)
     }
 

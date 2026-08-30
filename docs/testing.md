@@ -107,3 +107,20 @@ On 2026-08-30 this originally proved GTK → D-Bus → daemon against the physic
 keyboard. The client now loads connection data, Base, Fn, and global lighting only;
 per-key RGB was removed from the UI after RE showed that FDA1 cannot render its stored
 map. The daemon methods remain covered by the reversible Milestone 5 diagnostic.
+
+### Device-profile smoke test
+
+This test writes hardware and is never run by `cargo test`. With the daemon and UI
+running:
+
+1. In Settings, name the profile and choose **Back Up Now**. Export the resulting JSON.
+2. Import that JSON and confirm the keyboard does not change; import is storage-only.
+3. Make one small, reversible key or lighting change and verify it on the keyboard.
+4. Choose **Restore**, accept the confirmation, then refresh and confirm Base/Fn maps,
+   lighting, macros, macro names, and semantic steps match the backup.
+5. Re-export and retain the known-good file before separately testing **Back Up and
+   Reset**. Do not select **Reset Without Backup** for this acceptance test.
+
+If restore reports that rollback also failed, stop making changes: the keyboard may
+contain a mixture of the target and pre-restore states. Reconnect, inspect every section,
+and restore the known-good exported profile.

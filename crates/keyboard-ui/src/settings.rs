@@ -1,6 +1,48 @@
 use adw::prelude::*;
 
 use crate::kle::{custom_kle_path, validate_kle_layout};
+use crate::profile::{DeviceProfile, load_active_profile, save_active_profile, write_profile_file};
+
+#[derive(Clone)]
+pub(crate) struct SettingsPage {
+    pub root: gtk::ScrolledWindow,
+    pub info: gtk::Label,
+    pub error: gtk::Label,
+    pub factory_reset: gtk::Button,
+    pub backup_profile: gtk::Button,
+    pub restore_profile: gtk::Button,
+    profile_name: gtk::Entry,
+    profile_status: gtk::Label,
+    profile_error: gtk::Label,
+    export_profile: gtk::Button,
+}
+
+impl SettingsPage {
+    pub(crate) fn profile_name(&self) -> String {
+        self.profile_name.text().to_string()
+    }
+
+    pub(crate) fn set_profile_message(&self, message: &str) {
+        self.profile_status.set_text(message);
+        self.profile_error.set_text("");
+        self.profile_error.set_visible(false);
+    }
+
+    pub(crate) fn set_profile_error(&self, message: &str) {
+        self.profile_error.set_text(message);
+        self.profile_error.set_visible(true);
+    }
+
+    pub(crate) fn refresh_profile(&self) {
+        refresh_profile_widgets(
+            &self.profile_name,
+            &self.profile_status,
+            &self.profile_error,
+            &self.restore_profile,
+            &self.export_profile,
+        );
+    }
+}
 
 fn store_custom_layout(source: &str) -> Result<(), String> {
     validate_kle_layout(source)?;
@@ -36,7 +78,7 @@ fn append_separator(card: &gtk::Box) {
     card.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
 }
 
-pub(crate) fn settings_page() -> (gtk::ScrolledWindow, gtk::Label, gtk::Label, gtk::Button) {
+pub(crate) fn settings_page() -> SettingsPage {
     let page = gtk::Box::new(gtk::Orientation::Vertical, 0);
     page.set_margin_top(18);
     page.set_margin_bottom(18);
@@ -127,6 +169,183 @@ pub(crate) fn settings_page() -> (gtk::ScrolledWindow, gtk::Label, gtk::Label, g
             firmware_value.set_text(firmware.as_deref().unwrap_or("—"));
             protocol_value.set_text(protocol.as_deref().unwrap_or("—"));
             layers_value.set_text(layers.as_deref().unwrap_or("—"));
+        });
+    }
+
+    // ---------------------------------------------------------------------
+    // Device profile
+    // ---------------------------------------------------------------------
+    let profile_section = gtk::Box::new(gtk::Orientation::Vertical, 8);
+    let profile_title = gtk::Label::new(Some("Device profile"));
+    profile_title.add_css_class("heading");
+    profile_title.set_xalign(0.0);
+    profile_section.append(&profile_title);
+
+    let profile_card = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    profile_card.add_css_class("card");
+    let profile_content = gtk::Box::new(gtk::Orientation::Vertical, 12);
+    profile_content.set_margin_top(16);
+    profile_content.set_margin_bottom(16);
+    profile_content.set_margin_start(16);
+    profile_content.set_margin_end(16);
+
+    let profile_name = gtk::Entry::builder()
+        .placeholder_text("Keyboard Backup")
+        .max_length(64)
+        .build();
+    let profile_name_row = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+    let profile_name_label = gtk::Label::new(Some("Profile name"));
+    profile_name_label.set_xalign(0.0);
+    profile_name_label.set_hexpand(true);
+    profile_name.set_hexpand(true);
+    profile_name_row.append(&profile_name_label);
+    profile_name_row.append(&profile_name);
+
+    let profile_status = gtk::Label::new(Some("No local profile"));
+    profile_status.set_xalign(0.0);
+    profile_status.set_wrap(true);
+    profile_status.add_css_class("dim-label");
+    let profile_hint = gtk::Label::new(Some(
+        "Backups include both complete keymaps, lighting, raw macro storage, the RGB storage map, and local macro names/steps. Importing a file does not write to the keyboard.",
+    ));
+    profile_hint.set_xalign(0.0);
+    profile_hint.set_wrap(true);
+    profile_hint.add_css_class("dim-label");
+    let profile_error = gtk::Label::new(None);
+    profile_error.set_xalign(0.0);
+    profile_error.set_wrap(true);
+    profile_error.add_css_class("error");
+    profile_error.set_visible(false);
+
+    let profile_actions = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    profile_actions.set_halign(gtk::Align::End);
+    let import_profile = gtk::Button::with_label("Import…");
+    let export_profile = gtk::Button::with_label("Export…");
+    let restore_profile = gtk::Button::with_label("Restore");
+    let backup_profile = gtk::Button::with_label("Back Up Now");
+    backup_profile.add_css_class("suggested-action");
+    profile_actions.append(&import_profile);
+    profile_actions.append(&export_profile);
+    profile_actions.append(&restore_profile);
+    profile_actions.append(&backup_profile);
+
+    profile_content.append(&profile_name_row);
+    profile_content.append(&profile_status);
+    profile_content.append(&profile_hint);
+    profile_content.append(&profile_error);
+    profile_content.append(&profile_actions);
+    profile_card.append(&profile_content);
+    profile_section.append(&profile_card);
+    content.append(&profile_section);
+
+    refresh_profile_widgets(
+        &profile_name,
+        &profile_status,
+        &profile_error,
+        &restore_profile,
+        &export_profile,
+    );
+
+    {
+        let profile_name = profile_name.clone();
+        let profile_status = profile_status.clone();
+        let profile_error = profile_error.clone();
+        let restore_profile = restore_profile.clone();
+        let export_profile = export_profile.clone();
+        import_profile.connect_clicked(move |button| {
+            let filter = gtk::FileFilter::new();
+            filter.set_name(Some("Anko keyboard profiles"));
+            filter.add_pattern("*.json");
+            let parent = button.root().and_downcast::<gtk::Window>();
+            let dialog = gtk::FileChooserNative::new(
+                Some("Import keyboard profile"),
+                parent.as_ref(),
+                gtk::FileChooserAction::Open,
+                Some("Import"),
+                Some("Cancel"),
+            );
+            dialog.add_filter(&filter);
+            let profile_name = profile_name.clone();
+            let profile_status = profile_status.clone();
+            let profile_error = profile_error.clone();
+            let restore_profile = restore_profile.clone();
+            let export_profile = export_profile.clone();
+            dialog.connect_response(move |dialog, response| {
+                if response != gtk::ResponseType::Accept {
+                    return;
+                }
+                let result = dialog
+                    .file()
+                    .and_then(|file| file.path())
+                    .ok_or_else(|| "The selected profile is not locally readable".to_string())
+                    .and_then(|path| std::fs::read_to_string(path).map_err(|e| e.to_string()))
+                    .and_then(|source| DeviceProfile::from_json(&source))
+                    .and_then(|profile| save_active_profile(&profile));
+                match result {
+                    Ok(()) => refresh_profile_widgets(
+                        &profile_name,
+                        &profile_status,
+                        &profile_error,
+                        &restore_profile,
+                        &export_profile,
+                    ),
+                    Err(error) => {
+                        profile_error.set_text(&error);
+                        profile_error.set_visible(true);
+                    }
+                }
+            });
+            dialog.show();
+        });
+    }
+
+    {
+        let profile_error = profile_error.clone();
+        export_profile.connect_clicked(move |button| {
+            let profile = match load_active_profile() {
+                Ok(Some(profile)) => profile,
+                Ok(None) => {
+                    profile_error.set_text("There is no local profile to export");
+                    profile_error.set_visible(true);
+                    return;
+                }
+                Err(error) => {
+                    profile_error.set_text(&error);
+                    profile_error.set_visible(true);
+                    return;
+                }
+            };
+            let parent = button.root().and_downcast::<gtk::Window>();
+            let dialog = gtk::FileChooserNative::new(
+                Some("Export keyboard profile"),
+                parent.as_ref(),
+                gtk::FileChooserAction::Save,
+                Some("Export"),
+                Some("Cancel"),
+            );
+            dialog.set_current_name("anko-keyboard-profile.json");
+            let profile_error = profile_error.clone();
+            dialog.connect_response(move |dialog, response| {
+                if response != gtk::ResponseType::Accept {
+                    return;
+                }
+                let result = dialog
+                    .file()
+                    .and_then(|file| file.path())
+                    .ok_or_else(|| "The selected destination is not writable".to_string())
+                    .and_then(|path| write_profile_file(&path, &profile));
+                match result {
+                    Ok(()) => {
+                        profile_error.set_text("");
+                        profile_error.set_visible(false);
+                    }
+                    Err(error) => {
+                        profile_error.set_text(&error);
+                        profile_error.set_visible(true);
+                    }
+                }
+            });
+            dialog.show();
         });
     }
 
@@ -350,5 +569,53 @@ Changes apply after restarting the app. <a href="https://www.keyboard-layout-edi
     scroll.set_hexpand(true);
     scroll.set_vexpand(true);
 
-    (scroll, info, error, factory_reset)
+    SettingsPage {
+        root: scroll,
+        info,
+        error,
+        factory_reset,
+        backup_profile,
+        restore_profile,
+        profile_name,
+        profile_status,
+        profile_error,
+        export_profile,
+    }
+}
+
+fn refresh_profile_widgets(
+    name: &gtk::Entry,
+    status: &gtk::Label,
+    error: &gtk::Label,
+    restore: &gtk::Button,
+    export: &gtk::Button,
+) {
+    match load_active_profile() {
+        Ok(Some(profile)) => {
+            name.set_text(&profile.name);
+            status.set_text(&format!(
+                "Local profile · firmware {} · protocol {}",
+                profile.hardware.firmware_version, profile.hardware.protocol_version
+            ));
+            restore.set_sensitive(true);
+            export.set_sensitive(true);
+            error.set_text("");
+            error.set_visible(false);
+        }
+        Ok(None) => {
+            if name.text().is_empty() {
+                name.set_text("Keyboard Backup");
+            }
+            status.set_text("No local profile");
+            restore.set_sensitive(false);
+            export.set_sensitive(false);
+        }
+        Err(message) => {
+            status.set_text("Local profile is invalid");
+            restore.set_sensitive(false);
+            export.set_sensitive(false);
+            error.set_text(&message);
+            error.set_visible(true);
+        }
+    }
 }

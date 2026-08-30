@@ -75,12 +75,7 @@ pub fn encode_macro_storage(macros: &[Macro]) -> Result<[u8; MACRO_STORAGE_SIZE]
 }
 
 pub fn decode_macro_storage(storage: &[u8]) -> Result<Vec<Macro>, MacroCodecError> {
-    if storage.len() != MACRO_STORAGE_SIZE {
-        return Err(MacroCodecError::StorageSize {
-            expected: MACRO_STORAGE_SIZE,
-            actual: storage.len(),
-        });
-    }
+    validate_macro_storage_layout(storage)?;
     let mut macros = Vec::new();
     for id in 0..USABLE_MACRO_COUNT {
         let pointer_index = id as usize * 2;
@@ -90,14 +85,8 @@ pub fn decode_macro_storage(storage: &[u8]) -> Result<Vec<Macro>, MacroCodecErro
         }
         let offset = u16::from_le_bytes(pointer_bytes);
         let mut cursor = offset as usize;
-        if cursor < POINTER_TABLE_SIZE || cursor + EVENT_SIZE > storage.len() {
-            return Err(MacroCodecError::InvalidPointer { id, offset });
-        }
         let mut events = Vec::new();
         loop {
-            if cursor + EVENT_SIZE > storage.len() {
-                return Err(MacroCodecError::UnterminatedMacro(id));
-            }
             let flags = storage[cursor + 2];
             let kind_bits = flags & 0x3F;
             let kind = match kind_bits {
@@ -125,6 +114,41 @@ pub fn decode_macro_storage(storage: &[u8]) -> Result<Vec<Macro>, MacroCodecErro
         macros.push(Macro { id, events });
     }
     Ok(macros)
+}
+
+/// Validate macro pointers and termination without rejecting unknown event
+/// kinds. Hardware profiles use this tolerant check so raw future records can
+/// still be backed up and restored byte-for-byte.
+pub fn validate_macro_storage_layout(storage: &[u8]) -> Result<(), MacroCodecError> {
+    if storage.len() != MACRO_STORAGE_SIZE {
+        return Err(MacroCodecError::StorageSize {
+            expected: MACRO_STORAGE_SIZE,
+            actual: storage.len(),
+        });
+    }
+    for id in 0..USABLE_MACRO_COUNT {
+        let pointer_index = id as usize * 2;
+        let pointer_bytes = [storage[pointer_index], storage[pointer_index + 1]];
+        if pointer_bytes == [0xFF, 0xFF] || pointer_bytes == [0, 0] {
+            continue;
+        }
+        let offset = u16::from_le_bytes(pointer_bytes);
+        let mut cursor = offset as usize;
+        if cursor < POINTER_TABLE_SIZE || cursor + EVENT_SIZE > storage.len() {
+            return Err(MacroCodecError::InvalidPointer { id, offset });
+        }
+        loop {
+            if cursor + EVENT_SIZE > storage.len() {
+                return Err(MacroCodecError::UnterminatedMacro(id));
+            }
+            let flags = storage[cursor + 2];
+            cursor += EVENT_SIZE;
+            if flags & 0x80 != 0 || flags == 0 {
+                break;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn event_kind_bits(kind: MacroEventKind) -> u8 {
@@ -205,6 +229,20 @@ mod tests {
                 id: 0,
                 offset: 4095
             })
+        );
+    }
+
+    #[test]
+    fn raw_layout_validation_preserves_unknown_future_events() {
+        let mut storage = [0xFF; MACRO_STORAGE_SIZE];
+        storage[0..2].copy_from_slice(&(POINTER_TABLE_SIZE as u16).to_le_bytes());
+        storage[POINTER_TABLE_SIZE..POINTER_TABLE_SIZE + EVENT_SIZE]
+            .copy_from_slice(&[20, 0, 0xBF, 42]);
+
+        assert_eq!(validate_macro_storage_layout(&storage), Ok(()));
+        assert_eq!(
+            decode_macro_storage(&storage),
+            Err(MacroCodecError::UnknownEventKind(0x3F))
         );
     }
 }

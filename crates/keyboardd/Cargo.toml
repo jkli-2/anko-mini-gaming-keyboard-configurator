@@ -9,5 +9,6 @@ rust-version.workspace = true
 hidapi.workspace = true
 keyboard-core = { path = "../keyboard-core" }
 keyboard-protocol = { path = "../keyboard-protocol" }
+serde_json.workspace = true
 zbus.workspace = true
 zbus_macros.workspace = true

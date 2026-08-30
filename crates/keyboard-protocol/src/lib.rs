@@ -22,7 +22,10 @@ pub use lighting::{
     encode_lighting_effect_request, encode_lighting_read_request, encode_lighting_write,
     parse_lighting_config_response, parse_lighting_response,
 };
-pub use macros::{MACRO_STORAGE_SIZE, MacroCodecError, decode_macro_storage, encode_macro_storage};
+pub use macros::{
+    MACRO_STORAGE_SIZE, MacroCodecError, decode_macro_storage, encode_macro_storage,
+    validate_macro_storage_layout,
+};
 pub use packet::{
     BLOCK_DATA_SIZE, PacketError, decode_block_response, decode_le_u16, decode_rgb_values,
     encode_factory_reset, encode_key_color_write, encode_key_write, encode_keymap_bulk_block,

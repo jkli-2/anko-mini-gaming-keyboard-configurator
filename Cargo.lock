@@ -720,6 +720,10 @@ dependencies = [
 [[package]]
 name = "keyboard-core"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "keyboard-protocol"
@@ -749,6 +753,7 @@ dependencies = [
  "hidapi",
  "keyboard-core",
  "keyboard-protocol",
+ "serde_json",
  "zbus",
  "zbus_macros",
 ]
