@@ -84,15 +84,15 @@ keys, the client falls back to its built-in geometry rather than guessing device
 
 The assignment palette has a separate **Keyboard Controls** category for operations
 handled inside the keyboard rather than emitted to the host: LED on/off, brightness
-up/down, next effect, next colour, effect speed up/down, and keyboard lock. These use
-the canonical `firmware/0` through `firmware/7` actions. They are deliberately separate
-from **System**, which contains host power, sleep, and wake actions.
+up/down, next effect, next colour, effect speed up/down, keyboard lock, F-key/media mode,
+and WASD/arrow mode. These use canonical `firmware/0` through `firmware/7`,
+`firmware/19`, and `firmware/36` actions. They are deliberately separate from
+**System**, which contains host power, sleep, and wake actions.
 
-The keyboard also has fixed Fn shortcuts that are not fully represented by its stored
-Fn keymap: Fn+W toggles WASD/arrow mode; Fn+Left Ctrl toggles the number row between
-F1–F12 and media actions; and the stock lighting/lock combinations invoke the same
-onboard controls listed above. The client can assign confirmed onboard-control records,
-but it cannot currently read or display the active WASD or F-key/media mode.
+The stock Fn map assigns `firmware/36` to Fn+W for WASD/arrow mode and `firmware/19`
+to Fn+Left Ctrl for F1–F12/media mode. The lighting/lock combinations invoke the other
+onboard controls listed above. The client can assign all these confirmed records, but
+it cannot currently read or display the active WASD or F-key/media mode.
 
 Settings can import one custom KLE raw-JSON layout or return to the bundled default.
 Imports are validated for the FDA1's 63 physical keys and positive geometry, then stored
@@ -153,6 +153,9 @@ writing zero for the currently reserved/index byte.
 - Provides the single custom/default KLE control, import guidance, and links to KLE plus
   the reference keyboard layout. Changes apply after restart.
 - Exposes factory reset only behind an explicit destructive confirmation dialog.
+- Does not yet provide device-profile backup or restore. Factory reset returns the
+  keyboard to stock state and cannot recover the user's previous Base/Fn maps, lighting,
+  or macros; users must treat it as destructive rather than as a profile workflow.
 
 ### Macros
 

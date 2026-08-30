@@ -24,13 +24,16 @@ The leading `00` is report ID 0. Vendor payloads begin with family `06`.
 Firmware/device-control key actions use record type `0x1F` with the control code in
 the second byte. Confirmed official-client codes are `0` LED on/off, `1`/`2` LED
 brightness up/down, `3` next LED effect, `4` next LED colour, `5`/`6` LED effect speed
-up/down, and `7` keyboard lock. The daemon represents these as `firmware/<code>`.
+up/down, and `7` keyboard lock. Factory FDA1 Fn-map readback additionally confirms
+`19` as the F-key/media mode toggle and `36` as the WASD/arrow mode toggle. The daemon
+represents these as `firmware/<code>`.
 
 These assignable records should not be confused with every built-in Fn combination.
 Physical testing shows that Fn+W toggles WASD/arrow mode and Fn+Left Ctrl toggles the
-number row between F1–F12 and media actions, but neither operation appears in the
-official assignable-control table. A keymap read continues to return the stored Fn
-assignments and does not expose either mode's current runtime state.
+number row between F1–F12 and media actions. Neither appears in the official
+assignable-control table, but factory readback identifies their stored actions as
+`firmware/36` and `firmware/19`. Readback does not expose either mode's current runtime
+state.
 
 Observed stock onboard shortcuts are:
 
@@ -46,8 +49,8 @@ Observed stock onboard shortcuts are:
 
 In media mode the number row maps `1..=` to Media Player, Volume Down, Volume Up,
 Mute, Stop, Previous Track, Play/Pause, Next Track, Mail, Web Home, Computer, and
-Calculator respectively. The two mode toggles have no confirmed assignable `0x1F`
-record and therefore remain documented onboard behaviour rather than palette actions.
+Calculator respectively. Both confirmed mode-toggle records are available in the Keys
+page's Keyboard Controls palette.
 
 ## Bank mapping
 
