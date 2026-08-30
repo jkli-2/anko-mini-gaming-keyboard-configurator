@@ -12,9 +12,9 @@ use keyboard_core::{
 use keyboard_protocol::{KEY_INDEX_COUNT, KeyboardDevice, PHYSICAL_KEYS, physical_key_by_id};
 use zbus::interface;
 
-pub const SERVICE_NAME: &str = "io.github.AnkoKeyboard";
-pub const OBJECT_PATH: &str = "/io/github/AnkoKeyboard";
-pub const INTERFACE_NAME: &str = "io.github.AnkoKeyboard";
+pub const SERVICE_NAME: &str = "io.github.jkli_2.anko_keyboard_configurator.Daemon";
+pub const OBJECT_PATH: &str = "/io/github/jkli_2/anko_keyboard_configurator/Daemon";
+pub const INTERFACE_NAME: &str = "io.github.jkli_2.anko_keyboard_configurator.Daemon";
 
 const WORKER_RESPONSE_TIMEOUT: Duration = Duration::from_secs(15);
 
@@ -635,7 +635,7 @@ impl KeyboardService {
     }
 }
 
-#[interface(name = "io.github.AnkoKeyboard")]
+#[interface(name = "io.github.jkli_2.anko_keyboard_configurator.Daemon")]
 impl KeyboardService {
     #[zbus(property(emits_changed_signal = "false"))]
     fn connected(&self) -> bool {

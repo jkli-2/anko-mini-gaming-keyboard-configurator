@@ -7,7 +7,7 @@ The first packaged release uses two components:
 ```text
 Flatpak GTK client
         │
-        │ session D-Bus: io.github.AnkoKeyboard
+        │ session D-Bus: io.github.jkli_2.anko_keyboard_configurator.Daemon
         ▼
 host-installed keyboardd user service
         │
@@ -43,7 +43,7 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
-  - --talk-name=io.github.AnkoKeyboard
+  - --talk-name=io.github.jkli_2.anko_keyboard_configurator.Daemon
 ```
 
 Do not add `--device=all`, direct hidraw access, host filesystem access, or system-bus
@@ -61,8 +61,8 @@ distribution-native package or installer owns these files:
 
 ```text
 /usr/libexec/anko-keyboard/keyboardd
-/usr/lib/systemd/user/io.github.AnkoKeyboard.service
-/usr/share/dbus-1/services/io.github.AnkoKeyboard.service
+/usr/lib/systemd/user/io.github.jkli_2.anko_keyboard_configurator.Daemon.service
+/usr/share/dbus-1/services/io.github.jkli_2.anko_keyboard_configurator.Daemon.service
 /usr/lib/udev/rules.d/70-anko-keyboard.rules
 ```
 
@@ -77,21 +77,25 @@ Description=Anko Keyboard configuration daemon
 
 [Service]
 Type=dbus
-BusName=io.github.AnkoKeyboard
+BusName=io.github.jkli_2.anko_keyboard_configurator.Daemon
 ExecStart=/usr/libexec/anko-keyboard/keyboardd
 Restart=on-failure
 RestartSec=1
 ```
 
 The service is activated on demand, so it does not need to be enabled at login.
+`PrivateTmp=true` keeps the daemon's advisory lock writable while
+`ProtectSystem=strict` is active. Do not add `ProtectHome=true`: live installation
+testing showed that hidapi then fails with `Permission denied` even when the FDA1
+hidraw nodes have the correct per-user `uaccess` ACL.
 
 ### D-Bus activation
 
 ```ini
 [D-BUS Service]
-Name=io.github.AnkoKeyboard
+Name=io.github.jkli_2.anko_keyboard_configurator.Daemon
 Exec=/usr/libexec/anko-keyboard/keyboardd
-SystemdService=io.github.AnkoKeyboard.service
+SystemdService=io.github.jkli_2.anko_keyboard_configurator.Daemon.service
 ```
 
 The activation filename should match the well-known name. D-Bus documents this
@@ -118,9 +122,9 @@ path.
 
 The Flatpak must distinguish these common failures:
 
-- `io.github.AnkoKeyboard` is unknown: the native companion is not installed or its
+- `io.github.jkli_2.anko_keyboard_configurator.Daemon` is unknown: the native companion is not installed or its
   activation files are unavailable;
-- activation fails: inspect `systemctl --user status io.github.AnkoKeyboard.service`;
+- activation fails: inspect `systemctl --user status io.github.jkli_2.anko_keyboard_configurator.Daemon.service`;
 - the service runs but reports permission denied: install/reload the udev rule and
   reconnect the keyboard; and
 - the service connects but no supported device exists: show the existing disconnected
@@ -188,18 +192,21 @@ systemctl --user daemon-reload
 ```
 
 The native uninstaller removes only the four files installed by its matching installer.
+The installer and uninstaller also remove the obsolete pre-release
+`io.github.AnkoKeyboard` activation files when encountered.
 
 ## Validation status
 
 On 2026-08-30, the manifest completed a clean Flatpak release build and AppStream
 composition using GNOME 50. The desktop and AppStream files passed their validators;
 the resulting metadata grants only graphics/display access and session-bus access to
-`io.github.AnkoKeyboard`. A release daemon build and temporary `DESTDIR` install also
+`io.github.jkli_2.anko_keyboard_configurator.Daemon`. A release daemon build and temporary `DESTDIR` install also
 passed without modifying the host installation.
 
-The remaining acceptance check requires intentionally installing the native companion:
-confirm activation from the installed Flatpak, reconnect/Refresh behavior, and one
-reversible write which restores the captured device state.
+The native companion and Flatpak-to-host activation were verified on 2026-08-30. A
+`GetInfo` invocation from inside the installed Flatpak activated the hardened user
+service and returned the connected FDA1 firmware/protocol details. The remaining
+packaging acceptance check is one reversible write which restores the captured state.
 
 The application ID follows the project's GitHub namespace. GitHub account hyphens are
 represented as underscores because dashes are not valid in that reverse-DNS component.

@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.jkli_2.anko_keyboard_configurator.Daemon
+Exec=/usr/libexec/anko-keyboard/keyboardd
+SystemdService=io.github.jkli_2.anko_keyboard_configurator.Daemon.service

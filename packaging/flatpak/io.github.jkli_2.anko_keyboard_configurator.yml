@@ -11,7 +11,7 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
-  - --talk-name=io.github.AnkoKeyboard
+  - --talk-name=io.github.jkli_2.anko_keyboard_configurator.Daemon
 
 modules:
   - name: keyboard-ui

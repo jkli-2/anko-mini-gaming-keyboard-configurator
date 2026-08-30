@@ -22,12 +22,17 @@ if [ -z "$destdir" ] && [ "$(id -u)" -ne 0 ]; then
 fi
 
 install -Dm0755 "$keyboardd_binary" "$destdir/usr/libexec/anko-keyboard/keyboardd"
-install -Dm0644 "$script_dir/io.github.AnkoKeyboard.service" \
-    "$destdir/usr/lib/systemd/user/io.github.AnkoKeyboard.service"
-install -Dm0644 "$script_dir/io.github.AnkoKeyboard.dbus.service" \
-    "$destdir/usr/share/dbus-1/services/io.github.AnkoKeyboard.service"
+install -Dm0644 "$script_dir/io.github.jkli_2.anko_keyboard_configurator.Daemon.service" \
+    "$destdir/usr/lib/systemd/user/io.github.jkli_2.anko_keyboard_configurator.Daemon.service"
+install -Dm0644 "$script_dir/io.github.jkli_2.anko_keyboard_configurator.Daemon.dbus.service" \
+    "$destdir/usr/share/dbus-1/services/io.github.jkli_2.anko_keyboard_configurator.Daemon.service"
 install -Dm0644 "$script_dir/70-anko-keyboard.rules" \
     "$destdir/usr/lib/udev/rules.d/70-anko-keyboard.rules"
+
+# Remove the pre-release service names when upgrading an earlier installation.
+rm -f -- \
+    "$destdir/usr/lib/systemd/user/io.github.AnkoKeyboard.service" \
+    "$destdir/usr/share/dbus-1/services/io.github.AnkoKeyboard.service"
 
 if [ -z "$destdir" ]; then
     udevadm control --reload-rules

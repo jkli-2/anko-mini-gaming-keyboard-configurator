@@ -3,9 +3,9 @@ use std::thread;
 
 use zbus::blocking::{Connection, Proxy};
 
-const SERVICE: &str = "io.github.AnkoKeyboard";
-const PATH: &str = "/io/github/AnkoKeyboard";
-const INTERFACE: &str = "io.github.AnkoKeyboard";
+const SERVICE: &str = "io.github.jkli_2.anko_keyboard_configurator.Daemon";
+const PATH: &str = "/io/github/jkli_2/anko_keyboard_configurator/Daemon";
+const INTERFACE: &str = "io.github.jkli_2.anko_keyboard_configurator.Daemon";
 
 pub type Info = (String, u16, u16, u16, u8, String);
 pub type Lighting = (u8, u8, u8, u8, u8, bool, u8, u8, u8, u8);

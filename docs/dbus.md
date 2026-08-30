@@ -3,9 +3,9 @@
 The daemon exposes one keyboard on the user session bus:
 
 ```text
-service:   io.github.AnkoKeyboard
-object:    /io/github/AnkoKeyboard
-interface: io.github.AnkoKeyboard
+service:   io.github.jkli_2.anko_keyboard_configurator.Daemon
+object:    /io/github/jkli_2/anko_keyboard_configurator/Daemon
+interface: io.github.jkli_2.anko_keyboard_configurator.Daemon
 ```
 
 The daemon is the sole HID owner. Every D-Bus hardware request is sent to one worker thread through a channel and completes only after the HID response has been decoded.
@@ -179,14 +179,14 @@ cargo run -p keyboardd
 In another terminal:
 
 ```sh
-busctl --user introspect io.github.AnkoKeyboard /io/github/AnkoKeyboard
-busctl --user call io.github.AnkoKeyboard /io/github/AnkoKeyboard io.github.AnkoKeyboard GetInfo
-busctl --user call io.github.AnkoKeyboard /io/github/AnkoKeyboard io.github.AnkoKeyboard Refresh
-busctl --user call io.github.AnkoKeyboard /io/github/AnkoKeyboard io.github.AnkoKeyboard GetKeymap s base
-busctl --user call io.github.AnkoKeyboard /io/github/AnkoKeyboard io.github.AnkoKeyboard GetKeymap s fn
-busctl --user call io.github.AnkoKeyboard /io/github/AnkoKeyboard io.github.AnkoKeyboard GetLighting
-busctl --user call io.github.AnkoKeyboard /io/github/AnkoKeyboard io.github.AnkoKeyboard GetKeyColors
-busctl --user call io.github.AnkoKeyboard /io/github/AnkoKeyboard io.github.AnkoKeyboard GetMacros
+busctl --user introspect io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon
+busctl --user call io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon io.github.jkli_2.anko_keyboard_configurator.Daemon GetInfo
+busctl --user call io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon io.github.jkli_2.anko_keyboard_configurator.Daemon Refresh
+busctl --user call io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon io.github.jkli_2.anko_keyboard_configurator.Daemon GetKeymap s base
+busctl --user call io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon io.github.jkli_2.anko_keyboard_configurator.Daemon GetKeymap s fn
+busctl --user call io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon io.github.jkli_2.anko_keyboard_configurator.Daemon GetLighting
+busctl --user call io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon io.github.jkli_2.anko_keyboard_configurator.Daemon GetKeyColors
+busctl --user call io.github.jkli_2.anko_keyboard_configurator.Daemon /io/github/jkli_2/anko_keyboard_configurator/Daemon io.github.jkli_2.anko_keyboard_configurator.Daemon GetMacros
 ```
 
 `SetKey` can be called directly, but manual writes are easy to forget to restore. Use
