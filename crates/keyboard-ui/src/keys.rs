@@ -197,8 +197,11 @@ const KEYBOARD_CONTROL_ACTIONS: &[PaletteAction] = &[
     ("LED Speed +", "firmware/5"),
     ("LED Speed −", "firmware/6"),
     ("Keyboard Lock", "firmware/7"),
+    ("Mac Mode", "firmware/13"),
+    ("Windows Mode", "firmware/14"),
     ("F-key / Media Mode", "firmware/19"),
     ("WASD / Arrow Mode", "firmware/36"),
+    ("White Light Mode", "firmware/60"),
 ];
 
 const MACRO_ACTIONS: &[PaletteAction] = &[
@@ -264,8 +267,11 @@ pub(crate) fn compact_keycap_label(label: &str) -> String {
         "nextledeffect" => "Fx+".into(),
         "nextledcolour" | "nextledcolor" => "Col+".into(),
         "keyboardlock" => "Lock".into(),
+        "macmode" => "Mac".into(),
+        "windowsmode" => "Win".into(),
         "fkeymediamode" => "F/Med".into(),
         "wasdarrowmode" => "WASD".into(),
+        "whitelightmode" => "White".into(),
         "mouseleftclick" => "MLeft".into(),
         "mouserightclick" => "MRight".into(),
         "mousemiddleclick" => "MMid".into(),
@@ -1079,8 +1085,11 @@ mod tests {
         assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("LED On / Off", "firmware/0")));
         assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("Next LED Effect", "firmware/3")));
         assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("Keyboard Lock", "firmware/7")));
+        assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("Mac Mode", "firmware/13")));
+        assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("Windows Mode", "firmware/14")));
         assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("F-key / Media Mode", "firmware/19")));
         assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("WASD / Arrow Mode", "firmware/36")));
+        assert!(KEYBOARD_CONTROL_ACTIONS.contains(&("White Light Mode", "firmware/60")));
         for &(label, action) in MACRO_ACTIONS {
             let id = action
                 .strip_prefix("macro/")
@@ -1112,7 +1121,10 @@ mod tests {
         assert_eq!(compact_keycap_label("LED Speed +"), "Spd+");
         assert_eq!(compact_keycap_label("LED Speed −"), "Spd−");
         assert_eq!(compact_keycap_label("Keyboard Lock"), "Lock");
+        assert_eq!(compact_keycap_label("Mac Mode"), "Mac");
+        assert_eq!(compact_keycap_label("Windows Mode"), "Win");
         assert_eq!(compact_keycap_label("F-key / Media Mode"), "F/Med");
         assert_eq!(compact_keycap_label("WASD / Arrow Mode"), "WASD");
+        assert_eq!(compact_keycap_label("White Light Mode"), "White");
     }
 }

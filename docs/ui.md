@@ -84,15 +84,22 @@ keys, the client falls back to its built-in geometry rather than guessing device
 
 The assignment palette has a separate **Keyboard Controls** category for operations
 handled inside the keyboard rather than emitted to the host: LED on/off, brightness
-up/down, next effect, next colour, effect speed up/down, keyboard lock, F-key/media mode,
-and WASD/arrow mode. These use canonical `firmware/0` through `firmware/7`,
-`firmware/19`, and `firmware/36` actions. They are deliberately separate from
+up/down, next effect, next colour, effect speed up/down, keyboard lock, Mac/Windows
+mode, F-key/media mode, WASD/arrow mode, and White Light mode. These use canonical
+`firmware/0` through `firmware/7`, `firmware/13`, `firmware/14`, `firmware/19`,
+`firmware/36`, and `firmware/60` actions. They are deliberately separate from
 **System**, which contains host power, sleep, and wake actions.
 
 The stock Fn map assigns `firmware/36` to Fn+W for WASD/arrow mode and `firmware/19`
 to Fn+Left Ctrl for F1–F12/media mode. The lighting/lock combinations invoke the other
 onboard controls listed above. The client can assign all these confirmed records, but
-it cannot currently read or display the active WASD or F-key/media mode.
+it cannot currently read or display the active WASD, F-key/media, Mac/Windows, or White
+Light mode states.
+
+White Light mode overrides the visible lighting without replacing the stored HSV
+configuration. Consequently, the client may successfully apply and verify an underlying
+colour while the keyboard remains visibly white until the user turns that firmware mode
+off. The mode's active state is not exposed by current readback.
 
 Settings can import one custom KLE raw-JSON layout or return to the bundled default.
 Imports are validated for the FDA1's 63 physical keys and positive geometry, then stored

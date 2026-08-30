@@ -25,8 +25,14 @@ Firmware/device-control key actions use record type `0x1F` with the control code
 the second byte. Confirmed official-client codes are `0` LED on/off, `1`/`2` LED
 brightness up/down, `3` next LED effect, `4` next LED colour, `5`/`6` LED effect speed
 up/down, and `7` keyboard lock. Factory FDA1 Fn-map readback additionally confirms
-`19` as the F-key/media mode toggle and `36` as the WASD/arrow mode toggle. The daemon
-represents these as `firmware/<code>`.
+`13` Mac mode, `14` Windows mode, `19` the F-key/media mode toggle, `36` the
+WASD/arrow mode toggle, and `60` White Light mode. The daemon represents these as
+`firmware/<code>`.
+
+The same factory map stores `firmware/16` on Fn+Space. A recovered generic action name
+calls this **Keyboard Reset**, but its FDA1 behavior, activation gesture, and scope have
+not been physically tested. Treat it as potentially destructive and do not expose it
+as a normal palette action without verified backup/restore and a controlled test.
 
 These assignable records should not be confused with every built-in Fn combination.
 Physical testing shows that Fn+W toggles WASD/arrow mode and Fn+Left Ctrl toggles the
@@ -35,17 +41,27 @@ assignable-control table, but factory readback identifies their stored actions a
 `firmware/36` and `firmware/19`. Readback does not expose either mode's current runtime
 state.
 
+White Light mode is a firmware override rather than an HSV preset. While it is active,
+lighting readback continues to report the underlying dynamic/static configuration and
+colour writes update that underlying state without changing the visible white output.
+Turning White Light mode off reveals the stored configuration again. Its active state
+is not currently readable.
+
 Observed stock onboard shortcuts are:
 
 | Chord | Firmware behaviour |
 | --- | --- |
 | Fn+W | Toggle the unmodified W/A/S/D keys between letters and arrow keys |
+| Fn+Z | Select Windows mode (`firmware/14`; detailed behavior awaiting test) |
+| Fn+X | Select Mac mode (`firmware/13`; detailed behavior awaiting test) |
 | Fn+Backslash | Select the next LED effect |
 | Fn+Enter | Toggle the LEDs |
 | Fn+Up / Fn+Down | Increase / decrease LED brightness |
 | Fn+Left / Fn+Right | Decrease / increase LED effect speed |
 | Fn+Left Ctrl | Toggle the number row between F1–F12 and media mode |
 | Fn+Left Super | Toggle keyboard lock |
+| Fn+Left Alt | Toggle the White Light firmware override (`firmware/60`) |
+| Fn+Space | Factory record `firmware/16`, generically named Keyboard Reset; behavior untested |
 
 In media mode the number row maps `1..=` to Media Player, Volume Down, Volume Up,
 Mute, Stop, Previous Track, Play/Pause, Next Track, Mail, Web Home, Computer, and

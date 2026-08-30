@@ -159,8 +159,11 @@ fn firmware_label(code: u8) -> String {
         5 => "LED Speed +".to_string(),
         6 => "LED Speed −".to_string(),
         7 => "Keyboard Lock".to_string(),
+        13 => "Mac Mode".to_string(),
+        14 => "Windows Mode".to_string(),
         19 => "F-key / Media Mode".to_string(),
         36 => "WASD / Arrow Mode".to_string(),
+        60 => "White Light Mode".to_string(),
         _ => format!("Keyboard Control {code}"),
     }
 }
@@ -189,8 +192,11 @@ mod tests {
             ("firmware/0", "LED On / Off"),
             ("firmware/3", "Next LED Effect"),
             ("firmware/7", "Keyboard Lock"),
+            ("firmware/13", "Mac Mode"),
+            ("firmware/14", "Windows Mode"),
             ("firmware/19", "F-key / Media Mode"),
             ("firmware/36", "WASD / Arrow Mode"),
+            ("firmware/60", "White Light Mode"),
             ("firmware/99", "Keyboard Control 99"),
         ];
         for (canonical, expected) in cases {
