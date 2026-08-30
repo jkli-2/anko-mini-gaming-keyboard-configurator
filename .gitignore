@@ -4,3 +4,8 @@
 /repo-flatpak/
 /*.flatpak
 /private/
+/packaging/aur/anko-keyboard/
+/packaging/aur/src/
+/packaging/aur/pkg/
+/packaging/aur/cargo-home/
+/packaging/aur/*.pkg.tar.*

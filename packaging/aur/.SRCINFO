@@ -1,0 +1,29 @@
+pkgbase = anko-mini-gaming-keyboard-configurator-git
+	pkgdesc = Linux configurator for the Anko Mini Gaming Keyboard 43721375
+	pkgver = 0.1.0.r2.gdee4680
+	pkgrel = 1
+	url = https://github.com/jkli-2/anko-mini-gaming-keyboard-configurator
+	arch = x86_64
+	license = MIT
+	makedepends = cargo
+	makedepends = git
+	makedepends = gtk4
+	makedepends = libadwaita
+	makedepends = hidapi
+	source = anko-keyboard::git+https://github.com/jkli-2/anko-mini-gaming-keyboard-configurator.git
+	b2sums = SKIP
+
+pkgname = anko-mini-gaming-keyboard-configurator-git
+	pkgdesc = GTK client for the Anko Mini Gaming Keyboard configurator
+	depends = anko-mini-gaming-keyboard-configurator-daemon-git=0.1.0.r2.gdee4680-1
+	depends = gtk4
+	depends = libadwaita
+	provides = anko-mini-gaming-keyboard-configurator
+	conflicts = anko-mini-gaming-keyboard-configurator
+
+pkgname = anko-mini-gaming-keyboard-configurator-daemon-git
+	pkgdesc = Native daemon companion for the Anko Mini Gaming Keyboard configurator
+	depends = hidapi
+	depends = systemd-libs
+	provides = anko-mini-gaming-keyboard-configurator-daemon
+	conflicts = anko-mini-gaming-keyboard-configurator-daemon

@@ -15,8 +15,8 @@
       Anko Mini Gaming Keyboard 43721375 (USB 36AE:FDA1).
     </p>
     <p>
-      This Flatpak is the graphical client. It requires the native keyboardd companion
-      service and its device-permission rule to be installed on the host.
+      The graphical client communicates with a keyboardd companion service, which
+      owns the device connection and applies configuration changes safely.
     </p>
   </description>
   <launchable type="desktop-id">io.github.jkli_2.anko_keyboard_configurator.desktop</launchable>

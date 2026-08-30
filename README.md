@@ -31,7 +31,7 @@ cargo run -p keyboard-ui
 
 The daemon also needs permission to access the keyboard's hidraw device. See
 [the packaging guide](docs/packaging.md) for the udev rule and the supported split
-Flatpak/native installation.
+Flatpak/native installation, including the Arch Linux/AUR packages.
 
 ## Documentation
 

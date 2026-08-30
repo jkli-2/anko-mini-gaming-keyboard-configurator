@@ -118,6 +118,27 @@ The installer should also reload the user service manager where practical. Do no
 one daemon per package installation; D-Bus activation should remain the normal start
 path.
 
+## Arch Linux / AUR
+
+The project includes a VCS split-package definition under `packaging/aur` while there
+is no tagged source release:
+
+- `anko-mini-gaming-keyboard-configurator-git` installs the native GTK client and
+  depends on the daemon companion; and
+- `anko-mini-gaming-keyboard-configurator-daemon-git` installs only `keyboardd`, its
+  activation files, and the udev rule for users of the Flatpak client.
+
+To build and install both packages directly from a source checkout:
+
+```sh
+cd packaging/aur
+makepkg --syncdeps --install
+```
+
+Reconnect the keyboard after the daemon package is installed. Pacman's systemd and
+udev hooks handle the corresponding reloads; the user service remains D-Bus activated
+and does not need to be enabled.
+
 ## Failure presentation
 
 The Flatpak must distinguish these common failures:
