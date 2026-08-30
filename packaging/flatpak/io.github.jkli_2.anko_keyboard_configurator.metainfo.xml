@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.jkli_2.anko_keyboard_configurator</id>
+  <name>Anko Keyboard</name>
+  <summary>Configure the Anko Mini Gaming Keyboard</summary>
+  <developer id="io.github.jkli_2">
+    <name>Anko Keyboard contributors</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <url type="homepage">https://github.com/jkli-2/anko-mini-gaming-keyboard-configurator</url>
+  <description>
+    <p>
+      Anko Keyboard configures key assignments, global lighting, and macros on the
+      Anko Mini Gaming Keyboard 43721375 (USB 36AE:FDA1).
+    </p>
+    <p>
+      This Flatpak is the graphical client. It requires the native keyboardd companion
+      service and its device-permission rule to be installed on the host.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.jkli_2.anko_keyboard_configurator.desktop</launchable>
+  <provides>
+    <binary>keyboard-ui</binary>
+  </provides>
+  <categories>
+    <category>Settings</category>
+    <category>HardwareSettings</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-08-30">
+      <description>
+        <p>Initial native Linux configurator release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

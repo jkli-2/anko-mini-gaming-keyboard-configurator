@@ -1,0 +1,6 @@
+/target/
+/.flatpak-builder/
+/build-flatpak/
+/repo-flatpak/
+/*.flatpak
+/private/

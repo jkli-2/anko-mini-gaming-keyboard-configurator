@@ -1,0 +1,38 @@
+app-id: io.github.jkli_2.anko_keyboard_configurator
+runtime: org.gnome.Platform
+runtime-version: "50"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: keyboard-ui
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --talk-name=io.github.AnkoKeyboard
+
+modules:
+  - name: keyboard-ui
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/keyboard-ui/cargo
+        CARGO_NET_OFFLINE: "true"
+    build-commands:
+      - cargo --offline build --release --locked -p keyboard-ui
+      - install -Dm0755 target/release/keyboard-ui /app/bin/keyboard-ui
+      - install -Dm0644 packaging/flatpak/io.github.jkli_2.anko_keyboard_configurator.desktop /app/share/applications/io.github.jkli_2.anko_keyboard_configurator.desktop
+      - install -Dm0644 packaging/flatpak/io.github.jkli_2.anko_keyboard_configurator.metainfo.xml /app/share/metainfo/io.github.jkli_2.anko_keyboard_configurator.metainfo.xml
+      - install -Dm0644 packaging/flatpak/io.github.jkli_2.anko_keyboard_configurator.svg /app/share/icons/hicolor/scalable/apps/io.github.jkli_2.anko_keyboard_configurator.svg
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - .flatpak-builder
+          - build-flatpak
+          - repo-flatpak
+          - target
+      - cargo-sources.json

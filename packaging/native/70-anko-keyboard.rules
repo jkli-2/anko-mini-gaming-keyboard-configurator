@@ -1,0 +1,1 @@
+ACTION=="add|change", SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="36ae", ATTRS{idProduct}=="fda1", TAG+="uaccess"

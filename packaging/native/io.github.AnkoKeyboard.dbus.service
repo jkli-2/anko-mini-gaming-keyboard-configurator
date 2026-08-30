@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=io.github.AnkoKeyboard
+Exec=/usr/libexec/anko-keyboard/keyboardd
+SystemdService=io.github.AnkoKeyboard.service

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Anko Keyboard
+Comment=Configure the Anko Mini Gaming Keyboard
+Exec=keyboard-ui
+Icon=io.github.jkli_2.anko_keyboard_configurator
+Terminal=false
+Type=Application
+Categories=Settings;HardwareSettings;GTK;
+Keywords=keyboard;lighting;keymap;macro;Anko;
+StartupNotify=true

@@ -1,0 +1,21 @@
+[workspace]
+members = [
+    "crates/keyboard-core",
+    "crates/keyboard-protocol",
+    "crates/keyboardd",
+    "crates/keyboard-ui",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+rust-version = "1.85"
+
+[workspace.dependencies]
+hidapi = { version = "2.6.3", default-features = false, features = ["linux-shared-hidraw"] }
+libc = "0.2"
+zbus = "=5.13.2"
+zbus_macros = "=5.13.2"
+gtk = { package = "gtk4", version = "0.9" }
+adw = { package = "libadwaita", version = "0.7", features = ["v1_4"] }
