@@ -1,6 +1,6 @@
 # Anko Mini Gaming Keyboard Configurator
 
-A native Linux configurator for the Anko Mini Gaming Keyboard 43721375
+A native Linux configurator for the [Anko Mini Gaming Keyboard 43721375](https://www.kmart.com.au/product/mini-gaming-keyboard-43721375/)
 (`36ae:fda1`). It provides key remapping for the Base and Fn layers, global lighting
 controls, and a semantic editor for the keyboard's 16 macro slots.
 
