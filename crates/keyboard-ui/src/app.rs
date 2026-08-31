@@ -72,13 +72,15 @@ pub(crate) fn build_ui(application: &adw::Application) {
     let window = adw::ApplicationWindow::builder()
         .application(application)
         .title("Anko Keyboard")
-        .default_width(900)
-        .default_height(750)
+        .default_width(950)
+        .default_height(850)
         .build();
-    window.set_size_request(800, 500);
+    window.set_size_request(800, 650);
     let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let stack = gtk::Stack::builder()
         .transition_type(gtk::StackTransitionType::Crossfade)
+        .hhomogeneous(false)
+        .vhomogeneous(false)
         .vexpand(true)
         .build();
 

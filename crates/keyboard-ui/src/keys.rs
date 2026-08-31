@@ -569,10 +569,10 @@ fn match_kle_keys_to_physical(layout: &KleLayout) -> HashMap<String, usize> {
 
 pub(crate) fn keys_page() -> KeysPage {
     let page = gtk::Box::new(gtk::Orientation::Vertical, 7);
-    page.set_margin_start(18);
-    page.set_margin_end(18);
-    page.set_margin_top(8);
-    page.set_margin_bottom(14);
+    page.set_margin_start(24);
+    page.set_margin_end(24);
+    page.set_margin_top(18);
+    page.set_margin_bottom(8);
 
     // Keep DropDown internally because the rest of the application already uses it,
     // but present it as two visible layer buttons so the active layer is always obvious.
@@ -787,7 +787,17 @@ pub(crate) fn keys_page() -> KeysPage {
 
     let shifted_symbols = gtk::ToggleButton::with_label("Shifted symbols");
     shifted_symbols.set_tooltip_text(Some("Show punctuation entered with Shift"));
-    palette_header.append(&shifted_symbols);
+    let shifted_symbols_slot = gtk::Stack::builder()
+        .hhomogeneous(true)
+        .vhomogeneous(true)
+        .build();
+    shifted_symbols_slot.add_named(&shifted_symbols, Some("control"));
+    shifted_symbols_slot.add_named(
+        &gtk::Box::new(gtk::Orientation::Horizontal, 0),
+        Some("placeholder"),
+    );
+    shifted_symbols_slot.set_visible_child_name("control");
+    palette_header.append(&shifted_symbols_slot);
 
     // Advanced editing is a mode, not another action category. Keep it beside
     // the category picker so the normal palette stays compact.
@@ -801,7 +811,8 @@ pub(crate) fn keys_page() -> KeysPage {
 
     let palette_stack = gtk::Stack::builder()
         .transition_type(gtk::StackTransitionType::Crossfade)
-        .vhomogeneous(true)
+        .hhomogeneous(true)
+        .vhomogeneous(false)
         .build();
     palette_stack.add_css_class("palette-strip");
     editor_area.append(&palette_stack);
@@ -887,6 +898,7 @@ pub(crate) fn keys_page() -> KeysPage {
     for &(label, action_name) in &KEYBOARD_OUTER_NUMBER_KEYS[..1] {
         let button = palette_button(label, action_name);
         button.set_sensitive(false);
+        button.set_valign(gtk::Align::Center);
         number_row.append(&button);
         palette_actions.push((button, action_name));
     }
@@ -908,6 +920,7 @@ pub(crate) fn keys_page() -> KeysPage {
     for &(label, action_name) in &KEYBOARD_OUTER_NUMBER_KEYS[1..] {
         let button = palette_button(label, action_name);
         button.set_sensitive(false);
+        button.set_valign(gtk::Align::Center);
         number_row.append(&button);
         palette_actions.push((button, action_name));
     }
@@ -1018,7 +1031,7 @@ pub(crate) fn keys_page() -> KeysPage {
     // names stable so adding categories later does not affect action handling.
     {
         let palette_stack = palette_stack.clone();
-        let shifted_symbols = shifted_symbols.clone();
+        let shifted_symbols_slot = shifted_symbols_slot.clone();
         palette_category.connect_selected_notify(move |dropdown| {
             const PAGE_NAMES: &[&str] = &[
                 "keyboard",
@@ -1031,7 +1044,11 @@ pub(crate) fn keys_page() -> KeysPage {
             ];
             if let Some(name) = PAGE_NAMES.get(dropdown.selected() as usize) {
                 palette_stack.set_visible_child_name(name);
-                shifted_symbols.set_visible(*name == "keyboard");
+                shifted_symbols_slot.set_visible_child_name(if *name == "keyboard" {
+                    "control"
+                } else {
+                    "placeholder"
+                });
             }
         });
     }
@@ -1039,28 +1056,30 @@ pub(crate) fn keys_page() -> KeysPage {
         let palette_category = palette_category.clone();
         let palette_stack = palette_stack.clone();
         let advanced = advanced.clone();
-        let shifted_symbols = shifted_symbols.clone();
+        let shifted_symbols_slot = shifted_symbols_slot.clone();
         advanced_toggle.connect_toggled(move |toggle| {
             let enabled = toggle.is_active();
             palette_category.set_sensitive(!enabled);
             palette_stack.set_visible(!enabled);
             advanced.set_visible(enabled);
-            shifted_symbols.set_visible(!enabled && palette_category.selected() == 0);
+            shifted_symbols_slot.set_visible_child_name(
+                if !enabled && palette_category.selected() == 0 {
+                    "control"
+                } else {
+                    "placeholder"
+                },
+            );
         });
     }
     palette_stack.set_visible_child_name("keyboard");
-
-    // Let the editor region absorb all spare height above the map-level actions.
-    // This pins the footer to the true bottom of the Keys page at any window
-    // height without stretching the keyboard itself.
-    let editor_spacer = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    editor_spacer.set_vexpand(true);
-    editor_area.append(&editor_spacer);
 
     // Saving is a map-level operation, so label it as such instead of implying the
     // button only applies the currently selected key.
     let footer = gtk::Box::new(gtk::Orientation::Horizontal, 8);
     footer.set_margin_top(8);
+    footer.set_margin_bottom(18);
+    footer.set_margin_start(24);
+    footer.set_margin_end(24);
     footer.set_halign(gtk::Align::Fill);
 
     let footer_spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -1076,10 +1095,31 @@ pub(crate) fn keys_page() -> KeysPage {
     apply.set_sensitive(false);
     footer.append(&apply);
     footer.set_valign(gtk::Align::End);
-    editor_area.append(&footer);
+
+    // The physical board and palette can overflow vertically on compact displays,
+    // while map-level actions remain available below the scroller.
+    let content_clamp = adw::Clamp::builder()
+        .maximum_size(960)
+        .tightening_threshold(760)
+        .child(&page)
+        .build();
+    let scroll = gtk::ScrolledWindow::new();
+    scroll.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
+    scroll.set_hexpand(true);
+    scroll.set_vexpand(true);
+    scroll.set_child(Some(&content_clamp));
+
+    let footer_clamp = adw::Clamp::builder()
+        .maximum_size(960)
+        .tightening_threshold(760)
+        .child(&footer)
+        .build();
+    let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    root.append(&scroll);
+    root.append(&footer_clamp);
 
     (
-        page,
+        root,
         bank,
         buttons,
         assignments,

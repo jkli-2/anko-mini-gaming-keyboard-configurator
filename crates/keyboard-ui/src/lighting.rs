@@ -357,7 +357,7 @@ pub(crate) fn effect_capabilities(effect: u32) -> EffectCapabilities {
 }
 
 pub(crate) type LightingPage = (
-    gtk::ScrolledWindow,
+    gtk::Box,
     gtk::DropDown,
     gtk::SpinButton,
     gtk::SpinButton,
@@ -374,10 +374,16 @@ pub(crate) fn lighting_page() -> LightingPage {
     page.set_margin_top(18);
     page.set_margin_start(24);
     page.set_margin_end(24);
-    page.set_margin_bottom(18);
+    page.set_margin_bottom(8);
 
-    let top = gtk::Box::new(gtk::Orientation::Horizontal, 18);
-    top.set_homogeneous(true);
+    let top = gtk::FlowBox::builder()
+        .row_spacing(18)
+        .column_spacing(18)
+        .homogeneous(true)
+        .min_children_per_line(1)
+        .max_children_per_line(2)
+        .selection_mode(gtk::SelectionMode::None)
+        .build();
     top.set_hexpand(true);
 
     // GNOME-style section: heading outside the card, padded content inside.
@@ -619,23 +625,46 @@ pub(crate) fn lighting_page() -> LightingPage {
     colour_panel.append(&colour_content);
     colour_section.append(&colour_panel);
 
-    top.append(&effect_section);
-    top.append(&colour_section);
+    top.insert(&effect_section, -1);
+    top.insert(&colour_section, -1);
     page.append(&top);
 
     let apply_lighting = gtk::Button::with_label("Apply Lighting");
     apply_lighting.add_css_class("suggested-action");
-    apply_lighting.set_halign(gtk::Align::End);
-    page.append(&apply_lighting);
 
+    let content_clamp = adw::Clamp::builder()
+        .maximum_size(900)
+        .tightening_threshold(700)
+        .child(&page)
+        .build();
     let scroll = gtk::ScrolledWindow::new();
     scroll.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Automatic);
-    scroll.set_child(Some(&page));
+    scroll.set_child(Some(&content_clamp));
     scroll.set_hexpand(true);
     scroll.set_vexpand(true);
 
+    let footer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    footer.set_margin_top(8);
+    footer.set_margin_bottom(18);
+    footer.set_margin_start(24);
+    footer.set_margin_end(24);
+    footer.set_halign(gtk::Align::Fill);
+    let footer_spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    footer_spacer.set_hexpand(true);
+    footer.append(&footer_spacer);
+    footer.append(&apply_lighting);
+    let footer_clamp = adw::Clamp::builder()
+        .maximum_size(900)
+        .tightening_threshold(700)
+        .child(&footer)
+        .build();
+
+    let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    root.append(&scroll);
+    root.append(&footer_clamp);
+
     (
-        scroll,
+        root,
         effect,
         brightness,
         speed,

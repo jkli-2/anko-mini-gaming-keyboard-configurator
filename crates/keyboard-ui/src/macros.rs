@@ -1960,7 +1960,14 @@ pub(crate) fn macros_page() -> MacroPage {
 
     content.append(&slots_section);
     content.append(&editor_section);
-    page.append(&content);
+    let content_clamp = adw::Clamp::builder()
+        .maximum_size(900)
+        .tightening_threshold(700)
+        .child(&content)
+        .build();
+    content_clamp.set_hexpand(true);
+    content_clamp.set_vexpand(true);
+    page.append(&content_clamp);
 
     macro_page.render_selected();
     macro_page

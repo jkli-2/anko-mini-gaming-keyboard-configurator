@@ -62,8 +62,8 @@ local keymap draft model.
 - Highlights the selected key in the layout; clicking it also shows its canonical
   semantic action in the editor.
 - Fits the full keyboard width without horizontal scrolling, with shrinking labels and
-  an 800 x 500 minimum window size to keep controls usable. The default window is
-  900 x 750.
+  vertical overflow for the board/palette while Save and Discard remain visible. The
+  default window is 950 x 850 and the supported minimum is 800 x 650.
 - Edits remain local to the selected layer until Apply calls `SetKeymap`.
 - Revert discards that layer's local draft without touching hardware.
 - Tooltips retain the physical legend, friendly assignment, and canonical action.
@@ -74,7 +74,8 @@ locks, and standalone modifiers in a compact 60%-inspired layout. Its Shifted Sy
 toggle changes the punctuation legends and actions in place. The auxiliary row includes
 Print Screen, Scroll Lock, Num Lock, Insert/Delete, navigation, and arrows. Separate
 pages cover F1–F24, combined media and host-system actions, Mouse, Keyboard Controls,
-M0–M15, and one-chord shortcuts. The Shortcut row reuses the Macro editor's armed GTK capture logic,
+M0–M15, and one-chord shortcuts. The Shortcut row reuses the Macro editor's armed GTK
+capture logic,
 requires a modifier plus one HID key, and writes the resulting `keyboard/usage/mask`
 action directly into the selected layer draft without consuming a macro slot. Existing
 shortcut assignments preload the row. The canonical text editor is confined to Advanced
