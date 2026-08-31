@@ -806,7 +806,7 @@ pub(crate) fn keys_page() -> KeysPage {
         .tooltip_text("Advanced action")
         .build();
     advanced_toggle.add_css_class("flat");
-    palette_header.append(&advanced_toggle);
+    palette_header.prepend(&advanced_toggle);
     editor_area.append(&palette_header);
 
     let palette_stack = gtk::Stack::builder()

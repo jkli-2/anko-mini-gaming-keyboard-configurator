@@ -184,9 +184,11 @@ pub(crate) fn install_kle_key_css(layout: &KleLayout) {
         if let Some(background) = key.color.as_deref().and_then(kle_css_color) {
             // Use background-color rather than the `background` shorthand so we do
             // not accidentally wipe GTK's state styling. Explicit hover/active
-            // shades keep KLE-coloured keys feeling like normal GTK buttons.
+            // shades keep KLE-coloured keys feeling like normal GTK buttons. A
+            // background-relative border keeps pale caps distinct from the page
+            // without putting a light outline around the dark caps.
             css.push_str(&format!(
-                ".{class_name} {{ background-image: none; background-color: {background}; }}\n                 .{class_name}:hover {{ background-color: shade({background}, 0.92); }}\n                 .{class_name}:active {{ background-color: shade({background}, 0.84); }}\n                 .{class_name}:checked {{ background-color: shade({background}, 0.90); }}\n"
+                ".{class_name} {{ background-image: none; background-color: {background}; border: 1px solid shade({background}, 0.82); }}\n                 .{class_name}:hover {{ background-color: shade({background}, 0.92); }}\n                 .{class_name}:active {{ background-color: shade({background}, 0.84); }}\n                 .{class_name}:checked {{ background-color: shade({background}, 0.90); }}\n"
             ));
         }
 
