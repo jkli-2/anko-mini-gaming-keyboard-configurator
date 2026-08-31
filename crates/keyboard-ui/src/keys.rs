@@ -11,36 +11,8 @@ use crate::kle::{
 
 type PaletteAction = (&'static str, &'static str);
 
-const LETTER_ACTIONS: &[PaletteAction] = &[
-    ("Q", "keyboard/20/0"),
-    ("W", "keyboard/26/0"),
-    ("E", "keyboard/8/0"),
-    ("R", "keyboard/21/0"),
-    ("T", "keyboard/23/0"),
-    ("Y", "keyboard/28/0"),
-    ("U", "keyboard/24/0"),
-    ("I", "keyboard/12/0"),
-    ("O", "keyboard/18/0"),
-    ("P", "keyboard/19/0"),
-    ("A", "keyboard/4/0"),
-    ("S", "keyboard/22/0"),
-    ("D", "keyboard/7/0"),
-    ("F", "keyboard/9/0"),
-    ("G", "keyboard/10/0"),
-    ("H", "keyboard/11/0"),
-    ("J", "keyboard/13/0"),
-    ("K", "keyboard/14/0"),
-    ("L", "keyboard/15/0"),
-    ("Z", "keyboard/29/0"),
-    ("X", "keyboard/27/0"),
-    ("C", "keyboard/6/0"),
-    ("V", "keyboard/25/0"),
-    ("B", "keyboard/5/0"),
-    ("N", "keyboard/17/0"),
-    ("M", "keyboard/16/0"),
-];
-
-const DIGIT_ACTIONS: &[PaletteAction] = &[
+const KEYBOARD_NUMBER_ROW: &[PaletteAction] = &[
+    ("`", "keyboard/53/0"),
     ("1", "keyboard/30/0"),
     ("2", "keyboard/31/0"),
     ("3", "keyboard/32/0"),
@@ -51,20 +23,12 @@ const DIGIT_ACTIONS: &[PaletteAction] = &[
     ("8", "keyboard/37/0"),
     ("9", "keyboard/38/0"),
     ("0", "keyboard/39/0"),
-];
-
-const SYMBOL_ACTIONS: &[PaletteAction] = &[
     ("-", "keyboard/45/0"),
     ("=", "keyboard/46/0"),
-    ("[", "keyboard/47/0"),
-    ("]", "keyboard/48/0"),
-    ("\\", "keyboard/49/0"),
-    (";", "keyboard/51/0"),
-    ("'", "keyboard/52/0"),
-    ("`", "keyboard/53/0"),
-    (",", "keyboard/54/0"),
-    (".", "keyboard/55/0"),
-    ("/", "keyboard/56/0"),
+];
+
+const KEYBOARD_SHIFTED_NUMBER_ROW: &[PaletteAction] = &[
+    ("~", "keyboard/53/2"),
     ("!", "keyboard/30/2"),
     ("@", "keyboard/31/2"),
     ("#", "keyboard/32/2"),
@@ -77,49 +41,95 @@ const SYMBOL_ACTIONS: &[PaletteAction] = &[
     (")", "keyboard/39/2"),
     ("_", "keyboard/45/2"),
     ("+", "keyboard/46/2"),
+];
+
+const KEYBOARD_Q_ROW: &[PaletteAction] = &[
+    ("Tab", "keyboard/43/0"),
+    ("Q", "keyboard/20/0"),
+    ("W", "keyboard/26/0"),
+    ("E", "keyboard/8/0"),
+    ("R", "keyboard/21/0"),
+    ("T", "keyboard/23/0"),
+    ("Y", "keyboard/28/0"),
+    ("U", "keyboard/24/0"),
+    ("I", "keyboard/12/0"),
+    ("O", "keyboard/18/0"),
+    ("P", "keyboard/19/0"),
+    ("[", "keyboard/47/0"),
+    ("]", "keyboard/48/0"),
+    ("\\", "keyboard/49/0"),
+];
+
+const KEYBOARD_A_ROW: &[PaletteAction] = &[
+    ("Caps", "keyboard/57/0"),
+    ("A", "keyboard/4/0"),
+    ("S", "keyboard/22/0"),
+    ("D", "keyboard/7/0"),
+    ("F", "keyboard/9/0"),
+    ("G", "keyboard/10/0"),
+    ("H", "keyboard/11/0"),
+    ("J", "keyboard/13/0"),
+    ("K", "keyboard/14/0"),
+    ("L", "keyboard/15/0"),
+    (";", "keyboard/51/0"),
+    ("'", "keyboard/52/0"),
+    ("Enter", "keyboard/40/0"),
+];
+
+const KEYBOARD_Z_ROW: &[PaletteAction] = &[
+    ("LShift", "keyboard/0/2"),
+    ("Z", "keyboard/29/0"),
+    ("X", "keyboard/27/0"),
+    ("C", "keyboard/6/0"),
+    ("V", "keyboard/25/0"),
+    ("B", "keyboard/5/0"),
+    ("N", "keyboard/17/0"),
+    ("M", "keyboard/16/0"),
+    (",", "keyboard/54/0"),
+    (".", "keyboard/55/0"),
+    ("/", "keyboard/56/0"),
+    ("RShift", "keyboard/0/32"),
+];
+
+const KEYBOARD_BOTTOM_ROW: &[PaletteAction] = &[
+    ("LCtrl", "keyboard/0/1"),
+    ("LSuper", "keyboard/0/8"),
+    ("LAlt", "keyboard/0/4"),
+    ("Space", "keyboard/44/0"),
+    ("RAlt", "keyboard/0/64"),
+    ("RSuper", "keyboard/0/128"),
+    ("RCtrl", "keyboard/0/16"),
+    ("Fn", "function-layer"),
+];
+
+const KEYBOARD_AUX_ROW: &[PaletteAction] = &[
+    ("PrtSc", "keyboard/70/0"),
+    ("ScrLk", "keyboard/71/0"),
+    ("NumLk", "keyboard/83/0"),
+    ("Ins", "keyboard/73/0"),
+    ("Del", "keyboard/76/0"),
+    ("Home", "keyboard/74/0"),
+    ("End", "keyboard/77/0"),
+    ("PgUp", "keyboard/75/0"),
+    ("PgDn", "keyboard/78/0"),
+    ("←", "keyboard/80/0"),
+    ("↓", "keyboard/81/0"),
+    ("↑", "keyboard/82/0"),
+    ("→", "keyboard/79/0"),
+];
+
+const KEYBOARD_OUTER_NUMBER_KEYS: &[PaletteAction] =
+    &[("Esc", "keyboard/41/0"), ("Bksp", "keyboard/42/0")];
+
+const KEYBOARD_SHIFTED_PUNCTUATION: &[PaletteAction] = &[
     ("{", "keyboard/47/2"),
     ("}", "keyboard/48/2"),
     ("|", "keyboard/49/2"),
     (":", "keyboard/51/2"),
     ("\"", "keyboard/52/2"),
-    ("~", "keyboard/53/2"),
     ("<", "keyboard/54/2"),
     (">", "keyboard/55/2"),
     ("?", "keyboard/56/2"),
-];
-
-const CONTROL_ACTIONS: &[PaletteAction] = &[
-    ("Esc", "keyboard/41/0"),
-    ("Tab", "keyboard/43/0"),
-    ("Enter", "keyboard/40/0"),
-    ("Space", "keyboard/44/0"),
-    ("Backspace", "keyboard/42/0"),
-    ("Delete", "keyboard/76/0"),
-    ("Caps Lock", "keyboard/57/0"),
-    ("Insert", "keyboard/73/0"),
-];
-
-const NAVIGATION_ACTIONS: &[PaletteAction] = &[
-    ("Left", "keyboard/80/0"),
-    ("Right", "keyboard/79/0"),
-    ("Up", "keyboard/82/0"),
-    ("Down", "keyboard/81/0"),
-    ("Home", "keyboard/74/0"),
-    ("End", "keyboard/77/0"),
-    ("Page Up", "keyboard/75/0"),
-    ("Page Down", "keyboard/78/0"),
-];
-
-const MODIFIER_ACTIONS: &[PaletteAction] = &[
-    ("Left Shift", "keyboard/0/2"),
-    ("Right Shift", "keyboard/0/32"),
-    ("Left Ctrl", "keyboard/0/1"),
-    ("Right Ctrl", "keyboard/0/16"),
-    ("Left Alt", "keyboard/0/4"),
-    ("Right Alt", "keyboard/0/64"),
-    ("Left Super", "keyboard/0/8"),
-    ("Right Super", "keyboard/0/128"),
-    ("Fn", "function-layer"),
 ];
 
 const FKEY_ACTIONS: &[PaletteAction] = &[
@@ -764,22 +774,20 @@ pub(crate) fn keys_page() -> KeysPage {
     let palette_header = gtk::Box::new(gtk::Orientation::Horizontal, 8);
     palette_header.set_halign(gtk::Align::Center);
     let palette_category = gtk::DropDown::from_strings(&[
-        "Letters",
-        "Digits",
-        "Symbols",
-        "Control",
-        "Navigation",
-        "Modifiers",
+        "Keyboard",
         "Shortcuts",
         "F-keys",
-        "Media",
+        "Media & System",
         "Mouse",
         "Keyboard Controls",
-        "System",
         "Macros",
     ]);
     palette_category.add_css_class("palette-category");
     palette_header.append(&palette_category);
+
+    let shifted_symbols = gtk::ToggleButton::with_label("Shifted symbols");
+    shifted_symbols.set_tooltip_text(Some("Show punctuation entered with Shift"));
+    palette_header.append(&shifted_symbols);
 
     // Advanced editing is a mode, not another action category. Keep it beside
     // the category picker so the normal palette stays compact.
@@ -866,27 +874,104 @@ pub(crate) fn keys_page() -> KeysPage {
         (rows, buttons)
     }
 
-    // Pick balanced row lengths for the built-in categories. Letters become
-    // 13 + 13, Symbols become two equal rows, and the smaller categories stay
-    // on a single centered row.
-    for (name, title, actions, per_row) in [
-        ("letters", "Letters", LETTER_ACTIONS, 13),
-        ("digits", "Digits", DIGIT_ACTIONS, 10),
-        ("symbols", "Symbols", SYMBOL_ACTIONS, 16),
-        ("control", "Control", CONTROL_ACTIONS, 8),
-        ("navigation", "Navigation", NAVIGATION_ACTIONS, 8),
-        ("modifiers", "Modifiers", MODIFIER_ACTIONS, 8),
-    ] {
-        let (rows, buttons) = action_rows(actions, per_row);
-        palette_actions.extend(buttons);
-        palette_stack.add_titled(&rows, Some(name), title);
+    // One compact keyboard page replaces the former letters, digits, symbols,
+    // controls, navigation, and modifiers categories. The rows mirror a 60%
+    // board while keeping the extra navigation/lock actions in one final row.
+    let keyboard_palette = gtk::Box::new(gtk::Orientation::Vertical, 4);
+    keyboard_palette.add_css_class("keyboard-palette");
+    keyboard_palette.set_margin_top(3);
+    keyboard_palette.set_margin_bottom(3);
+
+    let number_row = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+    number_row.set_halign(gtk::Align::Center);
+    for &(label, action_name) in &KEYBOARD_OUTER_NUMBER_KEYS[..1] {
+        let button = palette_button(label, action_name);
+        button.set_sensitive(false);
+        number_row.append(&button);
+        palette_actions.push((button, action_name));
     }
+    let number_stack = gtk::Stack::builder()
+        .transition_type(gtk::StackTransitionType::Crossfade)
+        .hhomogeneous(true)
+        .vhomogeneous(true)
+        .build();
+    for (name, actions) in [
+        ("normal", KEYBOARD_NUMBER_ROW),
+        ("shifted", KEYBOARD_SHIFTED_NUMBER_ROW),
+    ] {
+        let (row, buttons) = action_rows(actions, actions.len());
+        palette_actions.extend(buttons);
+        number_stack.add_named(&row, Some(name));
+    }
+    number_stack.set_visible_child_name("normal");
+    number_row.append(&number_stack);
+    for &(label, action_name) in &KEYBOARD_OUTER_NUMBER_KEYS[1..] {
+        let button = palette_button(label, action_name);
+        button.set_sensitive(false);
+        number_row.append(&button);
+        palette_actions.push((button, action_name));
+    }
+    keyboard_palette.append(&number_row);
+
+    let mut shifted_q_row = KEYBOARD_Q_ROW.to_vec();
+    let shifted_q_start = shifted_q_row.len() - 3;
+    shifted_q_row[shifted_q_start..].copy_from_slice(&KEYBOARD_SHIFTED_PUNCTUATION[..3]);
+    let mut shifted_a_row = KEYBOARD_A_ROW.to_vec();
+    let shifted_a_start = shifted_a_row.len() - 3;
+    shifted_a_row[shifted_a_start..shifted_a_start + 2]
+        .copy_from_slice(&KEYBOARD_SHIFTED_PUNCTUATION[3..5]);
+    let mut shifted_z_row = KEYBOARD_Z_ROW.to_vec();
+    let shifted_z_start = shifted_z_row.len() - 4;
+    shifted_z_row[shifted_z_start..shifted_z_start + 3]
+        .copy_from_slice(&KEYBOARD_SHIFTED_PUNCTUATION[5..]);
+
+    let mut symbol_row_stacks = Vec::new();
+    for (normal, shifted) in [
+        (KEYBOARD_Q_ROW, shifted_q_row.as_slice()),
+        (KEYBOARD_A_ROW, shifted_a_row.as_slice()),
+        (KEYBOARD_Z_ROW, shifted_z_row.as_slice()),
+    ] {
+        let row_stack = gtk::Stack::builder()
+            .transition_type(gtk::StackTransitionType::Crossfade)
+            .hhomogeneous(true)
+            .vhomogeneous(true)
+            .build();
+        for (name, actions) in [("normal", normal), ("shifted", shifted)] {
+            let (row, buttons) = action_rows(actions, actions.len());
+            palette_actions.extend(buttons);
+            row_stack.add_named(&row, Some(name));
+        }
+        row_stack.set_visible_child_name("normal");
+        keyboard_palette.append(&row_stack);
+        symbol_row_stacks.push(row_stack);
+    }
+
+    for actions in [KEYBOARD_BOTTOM_ROW, KEYBOARD_AUX_ROW] {
+        let (row, buttons) = action_rows(actions, actions.len());
+        palette_actions.extend(buttons);
+        keyboard_palette.append(&row);
+    }
+
+    {
+        let number_stack = number_stack.clone();
+        shifted_symbols.connect_toggled(move |toggle| {
+            let name = if toggle.is_active() {
+                "shifted"
+            } else {
+                "normal"
+            };
+            number_stack.set_visible_child_name(name);
+            for row_stack in &symbol_row_stacks {
+                row_stack.set_visible_child_name(name);
+            }
+        });
+    }
+    palette_stack.add_titled(&keyboard_palette, Some("keyboard"), "Keyboard");
 
     palette_stack.add_titled(&shortcut_row, Some("shortcuts"), "Shortcuts");
 
     for (name, title, actions, per_row) in [
         ("fkeys", "F-keys", FKEY_ACTIONS, 12),
-        ("media", "Media", MEDIA_ACTIONS, 7),
         ("mouse", "Mouse", MOUSE_ACTIONS, 7),
         (
             "keyboard-controls",
@@ -894,13 +979,21 @@ pub(crate) fn keys_page() -> KeysPage {
             KEYBOARD_CONTROL_ACTIONS,
             4,
         ),
-        ("system", "System", SYSTEM_ACTIONS, 3),
         ("macros", "Macros", MACRO_ACTIONS, 8),
     ] {
         let (rows, buttons) = action_rows(actions, per_row);
         palette_actions.extend(buttons);
         palette_stack.add_titled(&rows, Some(name), title);
     }
+
+    let media_system_actions: Vec<_> = MEDIA_ACTIONS
+        .iter()
+        .chain(SYSTEM_ACTIONS)
+        .copied()
+        .collect();
+    let (media_system, media_system_buttons) = action_rows(&media_system_actions, 8);
+    palette_actions.extend(media_system_buttons);
+    palette_stack.add_titled(&media_system, Some("media-system"), "Media & System");
     // Keep the raw editor out of the normal workflow. The icon button above
     // enters/exits advanced mode; while active the normal category picker is
     // disabled and the action palette is replaced by this single input row.
@@ -925,24 +1018,20 @@ pub(crate) fn keys_page() -> KeysPage {
     // names stable so adding categories later does not affect action handling.
     {
         let palette_stack = palette_stack.clone();
+        let shifted_symbols = shifted_symbols.clone();
         palette_category.connect_selected_notify(move |dropdown| {
             const PAGE_NAMES: &[&str] = &[
-                "letters",
-                "digits",
-                "symbols",
-                "control",
-                "navigation",
-                "modifiers",
+                "keyboard",
                 "shortcuts",
                 "fkeys",
-                "media",
+                "media-system",
                 "mouse",
                 "keyboard-controls",
-                "system",
                 "macros",
             ];
             if let Some(name) = PAGE_NAMES.get(dropdown.selected() as usize) {
                 palette_stack.set_visible_child_name(name);
+                shifted_symbols.set_visible(*name == "keyboard");
             }
         });
     }
@@ -950,14 +1039,16 @@ pub(crate) fn keys_page() -> KeysPage {
         let palette_category = palette_category.clone();
         let palette_stack = palette_stack.clone();
         let advanced = advanced.clone();
+        let shifted_symbols = shifted_symbols.clone();
         advanced_toggle.connect_toggled(move |toggle| {
             let enabled = toggle.is_active();
             palette_category.set_sensitive(!enabled);
             palette_stack.set_visible(!enabled);
             advanced.set_visible(enabled);
+            shifted_symbols.set_visible(!enabled && palette_category.selected() == 0);
         });
     }
-    palette_stack.set_visible_child_name("letters");
+    palette_stack.set_visible_child_name("keyboard");
 
     // Let the editor region absorb all spare height above the map-level actions.
     // This pins the footer to the true bottom of the Keys page at any window
@@ -1009,13 +1100,16 @@ mod tests {
 
     #[test]
     fn keyboard_palette_actions_use_canonical_syntax() {
-        for &(label, action) in LETTER_ACTIONS
+        for &(label, action) in KEYBOARD_OUTER_NUMBER_KEYS
             .iter()
-            .chain(DIGIT_ACTIONS)
-            .chain(SYMBOL_ACTIONS)
-            .chain(CONTROL_ACTIONS)
-            .chain(NAVIGATION_ACTIONS)
-            .chain(MODIFIER_ACTIONS)
+            .chain(KEYBOARD_NUMBER_ROW)
+            .chain(KEYBOARD_SHIFTED_NUMBER_ROW)
+            .chain(KEYBOARD_Q_ROW)
+            .chain(KEYBOARD_A_ROW)
+            .chain(KEYBOARD_Z_ROW)
+            .chain(KEYBOARD_BOTTOM_ROW)
+            .chain(KEYBOARD_AUX_ROW)
+            .chain(KEYBOARD_SHIFTED_PUNCTUATION)
             .chain(FKEY_ACTIONS)
         {
             if action == "function-layer" {
@@ -1033,11 +1127,14 @@ mod tests {
                 .unwrap_or_else(|_| panic!("{label} has invalid modifier mask in {action}"));
         }
 
-        assert!(LETTER_ACTIONS.contains(&("Q", "keyboard/20/0")));
-        assert!(SYMBOL_ACTIONS.contains(&("!", "keyboard/30/2")));
-        assert!(NAVIGATION_ACTIONS.contains(&("Home", "keyboard/74/0")));
-        assert!(MODIFIER_ACTIONS.contains(&("Right Alt", "keyboard/0/64")));
-        assert!(MODIFIER_ACTIONS.contains(&("Fn", "function-layer")));
+        assert!(KEYBOARD_Q_ROW.contains(&("Q", "keyboard/20/0")));
+        assert!(KEYBOARD_SHIFTED_NUMBER_ROW.contains(&("!", "keyboard/30/2")));
+        assert!(KEYBOARD_AUX_ROW.contains(&("PrtSc", "keyboard/70/0")));
+        assert!(KEYBOARD_AUX_ROW.contains(&("ScrLk", "keyboard/71/0")));
+        assert!(KEYBOARD_AUX_ROW.contains(&("NumLk", "keyboard/83/0")));
+        assert!(KEYBOARD_AUX_ROW.contains(&("Home", "keyboard/74/0")));
+        assert!(KEYBOARD_BOTTOM_ROW.contains(&("RAlt", "keyboard/0/64")));
+        assert!(KEYBOARD_BOTTOM_ROW.contains(&("Fn", "function-layer")));
         assert!(FKEY_ACTIONS.contains(&("F24", "keyboard/115/0")));
     }
 

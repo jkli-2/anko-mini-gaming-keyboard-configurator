@@ -68,10 +68,13 @@ local keymap draft model.
 - Revert discards that layer's local draft without touching hardware.
 - Tooltips retain the physical legend, friendly assignment, and canonical action.
 
-The keycaps translate the daemon's canonical action strings into friendly labels. A
-categorized palette covers letters, digits, symbols, controls, navigation, standalone
-modifiers, F1–F24, media/consumer controls, confirmed power-system actions, M0–M15, and
-one-chord shortcuts. The Shortcut row reuses the Macro editor's armed GTK capture logic,
+The keycaps translate the daemon's canonical action strings into friendly labels. The
+main Keyboard palette combines letters, digits, punctuation, controls, navigation,
+locks, and standalone modifiers in a compact 60%-inspired layout. Its Shifted Symbols
+toggle changes the punctuation legends and actions in place. The auxiliary row includes
+Print Screen, Scroll Lock, Num Lock, Insert/Delete, navigation, and arrows. Separate
+pages cover F1–F24, combined media and host-system actions, Mouse, Keyboard Controls,
+M0–M15, and one-chord shortcuts. The Shortcut row reuses the Macro editor's armed GTK capture logic,
 requires a modifier plus one HID key, and writes the resulting `keyboard/usage/mask`
 action directly into the selected layer draft without consuming a macro slot. Existing
 shortcut assignments preload the row. The canonical text editor is confined to Advanced
@@ -88,7 +91,7 @@ up/down, next effect, next colour, effect speed up/down, keyboard lock, Mac/Wind
 mode, F-key/media mode, WASD/arrow mode, and White Light mode. These use canonical
 `firmware/0` through `firmware/7`, `firmware/13`, `firmware/14`, `firmware/19`,
 `firmware/36`, and `firmware/60` actions. They are deliberately separate from
-**System**, which contains host power, sleep, and wake actions.
+**Media & System**, which contains host power, sleep, and wake alongside consumer actions.
 
 The stock Fn map assigns `firmware/36` to Fn+W for WASD/arrow mode and `firmware/19`
 to Fn+Left Ctrl for F1–F12/media mode. The lighting/lock combinations invoke the other
